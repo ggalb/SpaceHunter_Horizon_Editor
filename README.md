@@ -32,9 +32,22 @@ the sky is actually clear.
 
 ## Safety
 
-Slewing points a real telescope. Keep the scope physically clear of
-obstructions, use **STOP** to abort, and never point optics near the Sun — the
-30° Sun‑exclusion confirm is a safeguard, not a guarantee.
+> ⚠️ **Slewing points a real telescope.** Keep the scope physically clear of
+> obstructions, keep **STOP** within reach, and **never point optics near the
+> Sun** — the 30° Sun‑exclusion confirm is a safeguard, not a guarantee.
+
+## Disclaimer
+
+This software controls astronomical mount hardware. A slew moves a physical
+telescope and **can cause personal injury or damage equipment and property** if
+the mount is obstructed, its limits are misconfigured, tracking/park state is
+wrong, or it is pointed at the Sun. **You use this software entirely at your own
+risk.** The author (Space Hunter · Georg G Albrecht) accepts **no liability** for
+any personal injury, death, or damage to equipment or property arising from its
+use, misuse, or malfunction, or from improper handling of any hardware connected
+through it. Always supervise the mount, keep the STOP control within reach, and
+verify safe operation before and during every slew. Provided "as is", without
+warranty of any kind (see [`LICENSE`](LICENSE)).
 
 ## Files
 
