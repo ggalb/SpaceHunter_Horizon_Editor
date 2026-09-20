@@ -26,8 +26,9 @@ the sky is actually clear.
 ## Use
 
 - **Horizon editing only:** double‑click `horizon_editor_local.html`.
-- **With mount control:** run `start-bridge.cmd`, then open
-  `http://localhost:5555` in Chrome/Edge, and Connect.
+- **With mount control:** open the mount controller (GS Server) and connect the
+  mount, then run `start-bridge.cmd`, then open `http://localhost:5555` in
+  Chrome/Edge. Your connection to the mount is now established.
 
 ## Safety
 
@@ -42,3 +43,7 @@ obstructions, use **STOP** to abort, and never point optics near the Sun — the
 | `horizon_editor_local.html` | The app (open in Chrome/Edge) |
 | `gss-bridge.ps1` | Local ASCOM ↔ GS Server bridge (serves the page + mount API) |
 | `start-bridge.cmd` | Double‑click launcher for the bridge |
+
+## License
+
+MIT — © 2026 Space Hunter · Georg G Albrecht. See [`LICENSE`](LICENSE).
