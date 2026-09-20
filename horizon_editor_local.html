@@ -1,0 +1,1371 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Space Hunter — Horizon Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --bg:#0a0e1a; --panel:#12182b; --panel-edge:#232c47;
+    --grid:#2a3352; --grid-strong:#3c4770;
+    --text:#e6ebf7; --muted:#8a95bd;
+    --horizon-fill:#54331f; --horizon-line:#c07a3e;
+    --equator:#8f83ec; --dec-line:#5a5f96; --cardinal:#e3a94f;
+    --cursor:#7ec8e3; --danger:#e07272; --danger-strong:#ff3b30; --ok:#69d18a; --warn:#e0c168; --edge:#d97757; --sun:#ffd633;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; background:var(--bg); color:var(--text); font-family:'Manrope',system-ui,sans-serif;}
+  body{padding:24px 16px;}
+  h1,h2{font-family:'Barlow Condensed',system-ui,sans-serif; margin:0;}
+  .wrap{max-width:1200px; margin:0 auto;}
+  header h1{font-size:clamp(22px,4vw,30px); font-weight:700;}
+  header p{margin:4px 0 0; color:var(--muted); font-size:14px;}
+  .header-row{display:flex; justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;}
+  .file-controls{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .file-controls button{
+    height:36px; padding:0 14px; border:1px solid var(--panel-edge); border-radius:8px;
+    background:var(--panel); color:var(--text); font-family:'Manrope',sans-serif; font-size:13px; cursor:pointer; white-space:nowrap;
+  }
+  .file-controls button:hover{border-color:var(--grid-strong);}
+  .file-controls button:disabled{opacity:0.4; cursor:not-allowed;}
+  .file-controls .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:2px;}
+  .file-controls .fname{font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--muted);}
+  .site-strip{display:flex; flex-wrap:wrap; gap:18px; margin-top:14px; padding:12px 16px; align-items:flex-end;
+    background:var(--panel); border:1px solid var(--panel-edge); border-radius:10px;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted);}
+  .site-strip b{color:var(--text); font-weight:600;}
+  main{display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap; margin-top:20px;}
+  .chart-col{flex:1 1 520px; min-width:0;}
+  .chart-card{background:var(--panel); border:1px solid var(--panel-edge); border-radius:14px; padding:16px;}
+  svg{width:100%; height:auto; display:block; cursor:crosshair;}
+  .side-col{flex:0 1 380px; min-width:300px; display:flex; flex-direction:column; gap:16px;}
+  .panel{background:var(--panel); border:1px solid var(--panel-edge); border-radius:14px; padding:18px 20px;}
+  .panel h2{font-size:19px; font-weight:600; color:var(--cardinal); margin-bottom:12px;}
+  .field-row{display:flex; gap:10px; margin-bottom:10px; align-items:end;}
+  .field{flex:1; display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .field label{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px;}
+  .field input, .field select{
+    font-family:'IBM Plex Mono',monospace; font-size:15px; color:var(--text);
+    background:#0d1224; border:1px solid var(--panel-edge); border-radius:8px;
+    height:36px; padding:7px 9px; width:100%;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--cursor); outline-offset:1px;}
+  .nudge{display:flex; gap:4px;}
+  .nudge button{
+    flex:1; background:#0d1224; color:var(--muted); border:1px solid var(--panel-edge);
+    border-radius:6px; font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 0; cursor:pointer;
+  }
+  .nudge button:hover{color:var(--text); border-color:var(--grid-strong);}
+  button.action{
+    width:100%; padding:10px; margin-top:2px; border:none; border-radius:8px; cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif; font-size:16px; font-weight:700; letter-spacing:0.4px;
+  }
+  button.primary{background:var(--cursor); color:#052422;}
+  button.primary:hover{filter:brightness(1.08);}
+  button.confirm{background:var(--warn); color:#2a2005; margin-top:8px;}
+  button.confirm:hover{filter:brightness(1.08);}
+  button.confirm:disabled, button.primary:disabled{opacity:0.4; cursor:not-allowed; filter:none;}
+  button.action:disabled{opacity:0.4; cursor:not-allowed; filter:none;}
+  .btn-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:2px;}
+  .btn-grid button.action{margin-top:0;}
+  /* uniform, clean "inactive" look for disabled grid buttons (no murky tinted color); enabled keeps its vivid colour */
+  .btn-grid button.action:disabled{background:#161c30 !important; color:var(--muted) !important; border:1px solid var(--panel-edge); opacity:0.7;}
+  button.file{
+    width:100%; padding:9px; border:1px solid var(--panel-edge); border-radius:8px;
+    background:#0d1224; color:var(--text); font-family:'Manrope',sans-serif; font-size:14px; cursor:pointer;
+  }
+  button.file:hover{border-color:var(--grid-strong);}
+  .filestate{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--muted); margin-top:8px; line-height:1.6;}
+  .filestate .dot{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px;}
+  .dot.red{background:var(--danger);} .dot.green{background:var(--ok);} .dot.amber{background:var(--warn);}
+  .readout{margin-top:12px; padding-top:12px; border-top:1px solid var(--panel-edge);
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted); display:flex; flex-direction:column; gap:5px;}
+  .readout .status{font-weight:700; font-family:'Manrope',sans-serif;}
+  .status.ok{color:var(--ok);} .status.blocked{color:var(--danger);}
+  .toggle-row{display:flex; gap:8px; margin-bottom:10px;}
+  .toggle-row button{
+    flex:1; padding:6px 0; border:1px solid var(--panel-edge); background:#0d1224; color:var(--muted);
+    border-radius:6px; font-family:'Manrope',sans-serif; font-size:12px; cursor:pointer;
+  }
+  .toggle-row button.active{background:var(--cursor); color:#052422; border-color:var(--cursor); font-weight:700;}
+  .legend{display:flex; flex-direction:column; gap:8px; font-size:12.5px; color:var(--muted);}
+  .legend .row{display:flex; align-items:center; gap:9px;}
+  .swatch{width:22px; height:0; border-top-width:3px; border-top-style:solid; flex:0 0 auto;}
+  .swatch.fill{height:12px; border:none; border-radius:2px;}
+  .hint{font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.5;}
+  code{background:#0d1224; padding:1px 5px; border-radius:4px; font-family:'IBM Plex Mono',monospace;}
+  details.panel{padding:0;}
+  details.panel summary{
+    list-style:none; cursor:pointer; padding:18px 20px; font-family:'Barlow Condensed',sans-serif;
+    font-size:19px; font-weight:600; color:var(--cardinal);
+  }
+  details.panel summary::-webkit-details-marker{display:none;}
+  details.panel summary::after{content:"▸"; float:right; color:var(--muted); font-size:14px;}
+  details.panel[open] summary::after{content:"▾";}
+  details.panel .body{padding:0 20px 18px;}
+  .legend-below{margin-top:16px;}
+  @media (max-width:760px){ main{flex-direction:column;} .side-col{width:100%;} .header-row{flex-direction:column; align-items:flex-start;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Space Hunter &mdash; Horizon Editor</h1>
+    <div class="site-strip">
+      <div class="field" style="flex:0 0 150px;"><label for="latIn2">Lat (&deg;, +N)</label><input id="latIn2" type="number" step="0.000001" placeholder="enter latitude"></div>
+      <div class="field" style="flex:0 0 150px;"><label for="lonIn2">Lon (&deg;, +E)</label><input id="lonIn2" type="number" step="0.000001" placeholder="enter longitude"></div>
+      <div class="file-controls" style="margin-left:auto; align-self:flex-end;" title="Direct file open/save needs Chrome or Edge on Windows.">
+        <button id="openBtn">Open .hrz&hellip;</button>
+        <button id="saveBtn" disabled>Save</button>
+        <span class="fname" id="fileState"><span class="dot amber"></span>no file opened</span>
+      </div>
+    </div>
+    <p class="hint" id="persistNote" style="display:none;">Your browser is blocking local storage &mdash; site/camera values won't be remembered between sessions.</p>
+  </header>
+
+  <main>
+    <div class="chart-col">
+      <div class="chart-card">
+        <svg id="sky" viewBox="0 0 620 620" role="img" aria-label="Alt/Az sky dome chart"></svg>
+      </div>
+      <div class="chart-card" style="margin-top:16px;">
+        <svg id="strip" viewBox="0 0 740 300" role="img" aria-label="Azimuth vs altitude horizon profile (single-valued, as N.I.N.A. reads it)"></svg>
+        <p class="hint" style="margin-top:6px;">Azimuth &times; altitude profile &mdash; the <b>single-valued</b> horizon exactly as N.I.N.A. reads it (points sorted by azimuth; no verticals/overhangs). Click anywhere to place the cursor here too. New or edited points show <b style="color:var(--danger-strong)">red</b> until you Save.</p>
+      </div>
+      <div class="panel legend-below">
+        <h2 title="Confirming a point overwrites the horizon at that azimuth, no min/max protection. Editing Az 0° or 360° keeps both ends matched so the loop stays closed. When camera fields are filled in, the dashed circle shows the frame's field of view around the crosshair (with its lowest edge dotted) purely as a visual guide. Confirm always saves the frame CENTER (crosshair), matching how N.I.N.A. checks the horizon (mount centre vs horizon).">Legend <span style="color:var(--muted); font-size:13px; font-weight:400; cursor:help;">&#9432;</span></h2>
+        <div class="legend">
+          <div class="row"><span class="swatch fill" style="background:var(--horizon-fill); border:1px solid var(--horizon-line);"></span> Local horizon (.hrz data)</div>
+          <div class="row"><span class="swatch" style="border-color:var(--cardinal);"></span> Cardinal directions N&middot;E&middot;S&middot;W</div>
+          <div class="row"><span class="swatch" style="border-color:var(--equator); border-top-style:dashed;"></span> Celestial equator (Dec 0&deg;, J2000)</div>
+          <div class="row"><span class="swatch" style="border-color:var(--dec-line); border-top-style:dashed;"></span> Declination circles &plusmn;30&deg;/&plusmn;60&deg;</div>
+          <div class="row"><span class="swatch" style="border-color:var(--cursor); border-top-width:0; border-bottom:3px dotted var(--cursor);"></span> Target cursor / FOV ring</div>
+          <div class="row"><span class="swatch" style="width:12px; height:12px; border:none; border-radius:50%; background:var(--edge);"></span> FOV ring lowest edge (visual reference only)</div>
+          <div class="row"><span class="swatch" style="width:12px; height:12px; border:none; border-radius:50%; background:var(--sun);"></span> Sun (dot + 30&deg; zone when up) &middot; dotted line = today's path</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="panel">
+        <h2>RA / Dec &rarr; Alt / Az</h2>
+        <div class="field-row">
+          <div class="field">
+            <label for="raIn">RA (deg, h m s, or decimal h)</label>
+            <input id="raIn" type="text" value="306.5094090734796">
+          </div>
+          <div class="field" style="max-width:100px;">
+            <label>&nbsp;</label>
+            <div class="toggle-row" style="margin:0;">
+              <button id="raDeg" class="active" title="Interpret a single plain number as decimal degrees (e.g. pasted from MountRA).">deg</button>
+              <button id="raHrs" title="Interpret a single plain number as decimal hours. &quot;18 36 56&quot; style entries are always hours regardless of this toggle.">hours</button>
+            </div>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="decIn">Dec (&deg; ' " or decimal)</label><input id="decIn" type="text" value="47.71657850075553"></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="dtIn">Date &amp; time (paste the whole cell)</label>
+            <input id="dtIn" type="text" placeholder="e.g. 9/17/2026 20:19:07">
+            <div class="nudge" title="Step the timestamp and re-convert &mdash; traces the real tracked path (roughly constant Dec, hour angle changing), so you can find exactly where a pass cleared the obstruction.">
+              <button data-tsec="-300">&minus;5m</button><button data-tsec="-60">&minus;1m</button><button data-tsec="-10">&minus;10s</button>
+              <button data-tsec="10">+10s</button><button data-tsec="60">+1m</button><button data-tsec="300">+5m</button>
+            </div>
+          </div>
+          <div class="field" style="max-width:110px;">
+            <label>&nbsp;</label>
+            <div class="toggle-row" style="margin:0;">
+              <button id="tzLocal" class="active" title="Use this for both ExposureStart and ExposureStartUTC &mdash; in your NINA export both columns are your capture PC's local time despite the UTC name.">Local</button>
+              <button id="tzUtc" title="Only use if you've separately confirmed this timestamp is true UTC &mdash; NINA's own &quot;UTC&quot; column was found to actually be local time.">UTC</button>
+            </div>
+          </div>
+        </div>
+        <button class="action primary" id="convertBtn">Convert &rarr; Alt/Az</button>
+        <button class="file" id="resetEntryBtn" style="margin-top:8px;" disabled title="Restore RA, Dec and date/time exactly as last entered (undo any nudges), then reconvert.">&#8634; Reset to entered RA/Dec/time</button>
+        <div class="readout" id="convertOut">Enter RA/Dec and the timestamp from your imaging log.</div>
+      </div>
+
+      <div class="panel">
+        <h2>Alt / Az target</h2>
+        <div class="field-row">
+          <div class="field"><label for="altIn">Altitude (&deg;)</label><input id="altIn" type="number" min="-10" max="90" step="0.1" value="45"></div>
+          <div class="field"><label for="azIn">Azimuth (&deg;)</label><input id="azIn" type="number" min="0" max="360" step="0.1" value="180">
+            <div class="nudge">
+              <button data-nudge="-5">&minus;5&deg;</button><button data-nudge="-1">&minus;1&deg;</button>
+              <button data-nudge="1">+1&deg;</button><button data-nudge="5">+5&deg;</button>
+            </div>
+          </div>
+        </div>
+        <div class="btn-grid">
+          <button class="action primary" id="goBtn" title="Place the cursor at the entered Alt/Az.">Place</button>
+          <button class="action confirm" id="confirmBtn" disabled title="Confirm as obstruction — overwrite the horizon at this azimuth. Saves the frame center (matches NINA).">Confirm</button>
+          <button class="action" id="deletePtBtn" disabled style="background:var(--danger-strong); color:#2a0808;" title="Delete the selected point. Click near a point on the strip to snap/select it first.">Delete</button>
+          <button class="action" id="undoBtn" disabled style="background:#0d1224; color:var(--text); border:1px solid var(--panel-edge);" title="Undo the last horizon edit (Confirm/overwrite or Delete). Multiple levels. Nothing is written to the .hrz file until you press Save.">&#8630; Undo</button>
+        </div>
+        <div class="readout" id="readout">Click anywhere on the dome or strip, or enter Alt/Az above. On the strip, click near a point to snap &amp; select it.</div>
+      </div>
+
+      <details class="panel">
+        <summary>Camera / Focal Length</summary>
+        <div class="body">
+          <div class="field-row">
+            <div class="field"><label for="sensorW">Sensor width (mm)</label><input id="sensorW" type="number" step="0.01" placeholder="e.g. 23.5"></div>
+            <div class="field"><label for="sensorH">Sensor height (mm)</label><input id="sensorH" type="number" step="0.01" placeholder="e.g. 15.7"></div>
+          </div>
+          <div class="field-row">
+            <div class="field" style="max-width:160px;"><label for="focalLen">Focal length (mm)</label><input id="focalLen" type="number" step="0.1" placeholder="e.g. 800"></div>
+          </div>
+          <p class="hint">When filled in, a circle (diagonal-based, so no rotation angle needed) shows the frame's field of view around the crosshair &mdash; a <b>visual guide only</b>. Confirm always saves the frame <b>center</b> (crosshair), matching how N.I.N.A. checks the horizon: mount centre vs horizon, ignoring sensor size and rotation.</p>
+        </div>
+      </details>
+
+      <div class="panel" id="mountPanel">
+        <h2>Mount &mdash; ASCOM (GS Server)</h2>
+        <p class="hint" id="mountUnavailable">Open this page through the bridge to enable mount control: run <code>gss-bridge.ps1</code> and browse to <code>http://localhost:5555</code>. (Opened directly from disk, the mount panel stays inactive.)</p>
+        <div id="mountControls" style="display:none;">
+          <div class="filestate" id="mountStatus"><span class="dot amber"></span>bridge found &mdash; not connected</div>
+          <button class="action primary" id="mountConnectBtn">Connect to mount</button>
+          <div class="btn-grid" style="margin-top:8px;">
+            <button class="action confirm" id="slewBtn" disabled title="Slew the mount to the current crosshair Alt/Az (the selected point). Confirms first on low-altitude targets.">Slew to point</button>
+            <button class="action" id="stopBtn" disabled style="background:var(--danger-strong); color:#2a0808;" title="Abort any slew immediately (ASCOM AbortSlew).">STOP</button>
+          </div>
+          <button class="action" id="trackBtn" disabled style="background:#0d1224; color:var(--text); border:1px solid var(--panel-edge); margin-top:8px;" title="Toggle sidereal tracking. An Alt/Az slew turns tracking OFF so the scope holds the horizon bearing; turn it back ON to resume imaging.">Tracking: &mdash;</button>
+          <div class="readout" id="mountReadout">&mdash;</div>
+          <p class="hint">Slews to wherever the crosshair sits (click a point on the strip/dome, or use Convert / nudges). NINA checks the frame centre vs the horizon, so pointing the scope here shows exactly what NINA would.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  let LAT = null, LON = null;   // no assumed site until entered / restored / adopted from the mount
+  function siteValid(){ return LAT!=null && LON!=null && !isNaN(LAT) && !isNaN(LON); }
+  const NS = "http://www.w3.org/2000/svg";
+  const svg = document.getElementById('sky');
+  const CX = 310, CY = 310, RMAX = 270;
+
+  // bundled snapshot, used until a live file is opened
+  // Default until a .hrz is opened: a flat, clear 0° horizon (just the rim
+  // circle, no obstructions) — a clean canvas rather than baked-in demo data.
+  let horizon = [ [0,0], [360,0] ];
+  // baseline = last saved (or loaded) horizon; any point differing from it is
+  // "unsaved" and drawn red on the strip until Save updates this baseline.
+  let savedHorizon = horizon.map(p=>[p[0],p[1]]);
+  let fileHandle = null, unsaved = false;
+
+  function toRad(d){return d*Math.PI/180;}
+  function toDeg(r){return r*180/Math.PI;}
+
+  // ---------- projection ----------
+  function project(az, alt){
+    const r = (90-alt)/90*RMAX;
+    const th = toRad(az);
+    return [CX + r*Math.sin(th), CY - r*Math.cos(th)];
+  }
+  function unproject(x, y){
+    const dx = x-CX, dy = y-CY;
+    const r = Math.sqrt(dx*dx+dy*dy);
+    let az = toDeg(Math.atan2(dx,-dy));
+    if(az<0) az+=360;
+    const alt = 90 - (r/RMAX)*90;
+    return {az, alt};
+  }
+
+  // Obstruction altitude in a given azimuth direction, measured against the
+  // SAME polygon renderHorizon() actually draws (horizon points in FILE order
+  // + rim) — NOT an azimuth-sorted reinterpolation. This matters where the
+  // .hrz has deliberate out-of-azimuth "spike" points marking a near-vertical
+  // obstruction: sorting by azimuth erased the spike and under-reported the
+  // horizon, so points sitting inside the drawn brown fill were wrongly called
+  // "above the horizon line". Here we cast a ray from the zenith (chart centre)
+  // outward along the azimuth and take the FIRST time it enters the fill — the
+  // top of whatever blocks that direction. Everything below it is obstructed.
+  function horizonAltAt(az){
+    az = ((az%360)+360)%360;
+    const th = toRad(az);
+    const dx = Math.sin(th), dy = -Math.cos(th);   // unit ray dir, matches project()
+    const poly = [];
+    horizon.forEach(p=> poly.push(project(p[0], p[1])));
+    for(let a2=360; a2>=0; a2-=4) poly.push(project(a2, 0));   // rim, as drawn
+    let minT = Infinity;
+    for(let i=0;i<poly.length;i++){
+      const A = poly[i], B = poly[(i+1)%poly.length];
+      const Ex = B[0]-A[0], Ey = B[1]-A[1];
+      const Wx = A[0]-CX, Wy = A[1]-CY;
+      const det = Ex*dy - dx*Ey;
+      if(Math.abs(det) < 1e-9) continue;          // ray parallel to edge
+      const t = (-Wx*Ey + Ex*Wy)/det;             // pixel distance from centre
+      const s = (dx*Wy - dy*Wx)/det;              // position along edge [0,1]
+      if(t >= 0 && s >= 0 && s <= 1 && t < minT) minT = t;
+    }
+    if(minT === Infinity) return 0;
+    return Math.max(0, 90 - (minT/RMAX)*90);
+  }
+
+  function equatorial(H_deg, dec_deg){
+    const H = toRad(H_deg), dec = toRad(dec_deg), lat = toRad(LAT);
+    const alt = Math.asin(Math.sin(lat)*Math.sin(dec) + Math.cos(lat)*Math.cos(dec)*Math.cos(H));
+    const A = Math.atan2(Math.sin(H), Math.cos(H)*Math.sin(lat) - Math.tan(dec)*Math.cos(lat));
+    let az = (toDeg(A) + 180) % 360; if(az<0) az+=360;
+    return {alt: toDeg(alt), az};
+  }
+  // Exact inverse of equatorial(): Alt/Az -> hour angle H and Dec
+  // (Meeus 13.5/13.6), same azimuth-from-North (= A_south + 180) convention.
+  // Lets us recover the celestial target of any cursor point so time-nudge can
+  // trace its path from wherever the cursor currently is.
+  function altazToHDec(alt_deg, az_deg){
+    const alt = toRad(alt_deg);
+    const A = toRad(az_deg - 180);         // azimuth measured from South
+    const lat = toRad(LAT);
+    const dec = Math.asin(Math.sin(lat)*Math.sin(alt) - Math.cos(lat)*Math.cos(alt)*Math.cos(A));
+    const H = Math.atan2(Math.sin(A), Math.cos(A)*Math.sin(lat) + Math.tan(alt)*Math.cos(lat));
+    return {H: toDeg(H), dec: toDeg(dec)};
+  }
+  function decCirclePath(dec_deg, step){
+    step = step || 2;
+    let d = "", drawing = false;
+    for(let H=0; H<=360; H+=step){
+      const p = equatorial(H, dec_deg);
+      if(p.alt >= 0){
+        const [x,y] = project(p.az, p.alt);
+        d += (drawing ? "L" : "M") + x.toFixed(2) + "," + y.toFixed(2) + " ";
+        drawing = true;
+      } else drawing = false;
+    }
+    return d;
+  }
+
+  function el(name, attrs){
+    const e = document.createElementNS(NS, name);
+    for(const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  // ---------- static chart elements (drawn once) ----------
+  const root = el("g",{});
+  svg.appendChild(root);
+  root.appendChild(el("circle",{cx:CX,cy:CY,r:RMAX,fill:"#0d1428",stroke:"var(--grid-strong)","stroke-width":0.5}));
+  [0,15,30,45,60,75].forEach(alt=>{
+    const r = (90-alt)/90*RMAX;
+    root.appendChild(el("circle",{cx:CX,cy:CY,r:r,fill:"none",stroke:"var(--grid)","stroke-width": alt===0?0.5:1, "stroke-dasharray": alt===0?"none":"3,4"}));
+    if(alt>0){
+      const t = el("text",{x:CX+4, y:CY-r+3, fill:"var(--muted)","font-size":10,"font-family":"IBM Plex Mono, monospace"});
+      t.textContent = alt+"°"; root.appendChild(t);
+    }
+  });
+  for(let az=0; az<360; az+=30){
+    const [x,y] = project(az, 0);
+    root.appendChild(el("line",{x1:CX,y1:CY,x2:x,y2:y,stroke:"var(--grid)","stroke-width":1}));
+    const cardinal = {0:"N",90:"E",180:"S",270:"W"}[az];
+    const [lx,ly] = project(az, -7);
+    const t = el("text",{x:lx,y:ly,fill: cardinal?"var(--cardinal)":"var(--muted)",
+      "font-family": cardinal? "Barlow Condensed, sans-serif":"IBM Plex Mono, monospace",
+      "font-size": cardinal?22:11, "font-weight": cardinal?700:400,
+      "text-anchor":"middle","dominant-baseline":"middle"});
+    t.textContent = cardinal || az; root.appendChild(t);
+  }
+
+  const horizonGroup = el("g",{});
+  root.appendChild(horizonGroup);
+
+  const equatorialGroup = el("g",{});
+  root.appendChild(equatorialGroup);
+
+  function renderEquatorial(){
+    equatorialGroup.innerHTML = "";
+    if(!siteValid()) return;   // no site yet -> no equator/dec/pole
+    [-60,-30,30,60].forEach(dec=>{
+      const d = decCirclePath(dec);
+      if(d) equatorialGroup.appendChild(el("path",{d, fill:"none", stroke:"var(--dec-line)","stroke-width":1,"stroke-dasharray":"5,5"}));
+    });
+    equatorialGroup.appendChild(el("path",{d:decCirclePath(0,1), fill:"none", stroke:"var(--equator)","stroke-width":2,"stroke-dasharray":"7,5"}));
+    {
+      const p = equatorial(0,0);
+      const [x,y] = project(p.az, Math.max(p.alt,2));
+      const t = el("text",{x:x, y:y-8, fill:"var(--equator)","font-size":11,"font-family":"IBM Plex Mono, monospace","text-anchor":"middle"});
+      t.textContent = "Celestial Equator (J2000 Dec 0°)"; equatorialGroup.appendChild(t);
+    }
+    {
+      const poleAz = LAT>=0 ? 0 : 180;
+      const poleAlt = Math.abs(LAT);
+      const poleLabel = LAT>=0 ? "NCP" : "SCP";
+      const [x,y] = project(poleAz, poleAlt);
+      equatorialGroup.appendChild(el("circle",{cx:x,cy:y,r:4,fill:"none",stroke:"var(--dec-line)","stroke-width":1.5}));
+      const t = el("text",{x:x+8,y:y+3,fill:"var(--dec-line)","font-size":10,"font-family":"IBM Plex Mono, monospace"});
+      t.textContent = poleLabel; equatorialGroup.appendChild(t);
+    }
+  }
+  renderEquatorial();
+
+  root.appendChild(el("circle",{cx:CX,cy:CY,r:3.5,fill:"var(--text)"}));
+  {
+    const t = el("text",{x:CX+8,y:CY-6,fill:"var(--text)","font-size":11,"font-family":"IBM Plex Mono, monospace"});
+    t.textContent = "Zenith"; root.appendChild(t);
+  }
+
+  const ringGroup = el("g",{});
+  root.appendChild(ringGroup);
+
+  const sunGroupDome = el("g",{});   // Sun dot + 30° exclusion zone (dome)
+  root.appendChild(sunGroupDome);
+
+  const cursor = el("g",{id:"cursor", visibility:"hidden"});
+  cursor.appendChild(el("line",{x1:-14,y1:0,x2:14,y2:0,stroke:"var(--cursor)","stroke-width":2}));
+  cursor.appendChild(el("line",{x1:0,y1:-14,x2:0,y2:14,stroke:"var(--cursor)","stroke-width":2}));
+  root.appendChild(cursor);
+
+  const edgeDot = el("g",{id:"edgeDot", visibility:"hidden"});
+  edgeDot.appendChild(el("circle",{r:4,fill:"var(--edge)"}));
+  root.appendChild(edgeDot);
+
+  function renderRing(ring){
+    ringGroup.innerHTML = "";
+    if(!ring) return;
+    let d = "M";
+    ring.forEach((p,i)=>{
+      const [x,y] = project(p.az, Math.max(p.alt,0));
+      d += (i===0?"":"L") + x.toFixed(2) + "," + y.toFixed(2) + " ";
+    });
+    d += "Z";
+    ringGroup.appendChild(el("path",{d, fill:"none", stroke:"var(--cursor)","stroke-width":1.5,"stroke-dasharray":"2,3"}));
+  }
+  function showEdgeDot(point, show){
+    if(!show){ edgeDot.setAttribute("visibility","hidden"); return; }
+    const [x,y] = project(point.az, Math.max(point.alt,0));
+    edgeDot.setAttribute("transform","translate("+x.toFixed(2)+","+y.toFixed(2)+")");
+    edgeDot.setAttribute("visibility","visible");
+  }
+  // Angular "destination point" on the sky given a center Alt/Az, bearing and
+  // angular distance — same spherical formula used for lat/lon, with zenith
+  // standing in for the pole. Works for any center, from any source (RA/Dec
+  // conversion, manual entry, nudge, or a chart click).
+  function fovRingAroundAltAz(alt0, az0, radiusDeg, steps){
+    steps = steps || 32;
+    const alt0r = toRad(alt0), az0r = toRad(az0), d = toRad(radiusDeg);
+    const points = [];
+    for(let i=0;i<steps;i++){
+      const bearing = toRad(i*(360/steps));
+      const alt2 = Math.asin(Math.sin(alt0r)*Math.cos(d) + Math.cos(alt0r)*Math.sin(d)*Math.cos(bearing));
+      const az2 = az0r + Math.atan2(Math.sin(bearing)*Math.sin(d)*Math.cos(alt0r), Math.cos(d) - Math.sin(alt0r)*Math.sin(alt2));
+      let az2d = toDeg(az2); az2d = ((az2d%360)+360)%360;
+      points.push({alt: toDeg(alt2), az: az2d});
+    }
+    return points;
+  }
+  function fovFootprint(alt, az){
+    const radius = fovRadiusDeg();
+    if(radius == null) return null;
+    const ring = fovRingAroundAltAz(alt, az, radius);
+    const worst = ring.reduce((a,b)=> b.alt<a.alt ? b : a, ring[0]);
+    return {ring, worst, radius};
+  }
+
+  function renderHorizon(){
+    horizonGroup.innerHTML = "";
+    // Flat / clear 0° horizon (the default before a .hrz is opened): just the
+    // rim circle in the horizon colour, no brown fill.
+    if(horizon.reduce((m,p)=>Math.max(m,p[1]),-99) < 0.01){
+      horizonGroup.appendChild(el("circle",{cx:CX,cy:CY,r:RMAX,fill:"none",stroke:"var(--horizon-line)","stroke-width":2}));
+      renderStripBase();
+      return;
+    }
+    let hpath = "M";
+    horizon.forEach((p,i)=>{
+      const [x,y] = project(p[0], p[1]);
+      hpath += (i===0?"":"L") + x.toFixed(2) + "," + y.toFixed(2) + " ";
+    });
+    let rim = "";
+    for(let az=360; az>=0; az-=4){
+      const [x,y] = project(az,0);
+      rim += "L"+x.toFixed(2)+","+y.toFixed(2)+" ";
+    }
+    horizonGroup.appendChild(el("path",{d:hpath+rim+"Z", fill:"var(--horizon-fill)", "fill-opacity":0.85,
+      stroke:"var(--horizon-line)","stroke-width":2, "stroke-linejoin":"round"}));
+    renderStripBase();
+  }
+
+  // ===== rectangular azimuth × altitude strip (single-valued: exactly what NINA reads) =====
+  const strip = document.getElementById('strip');
+  const SPADL=42, SPADR=14, SPADT=14, SPADB=30, SVBW=740, SVBH=300;
+  const SW = SVBW-SPADL-SPADR, SH = SVBH-SPADT-SPADB;
+  const sx = az => SPADL + Math.min(360,Math.max(0,az))/360*SW;   // 0 -> left edge, 360 -> right edge (no wrap)
+  const sy = alt => SPADT + (1 - Math.max(0,Math.min(90,alt))/90)*SH;
+  const stripRoot = el("g",{}); strip.appendChild(stripRoot);
+  const stripGrid = el("g",{}); stripRoot.appendChild(stripGrid);
+  const stripHorizonG = el("g",{}); stripRoot.appendChild(stripHorizonG);
+  const stripPtsG = el("g",{}); stripRoot.appendChild(stripPtsG);
+  const sunGroupStrip = el("g",{}); stripRoot.appendChild(sunGroupStrip);   // Sun + 30° zone (strip)
+  const stripDyn = el("g",{}); stripRoot.appendChild(stripDyn);
+  let selectedIdx = -1;       // index into `horizon` of the snapped point, or -1
+  let snapInProgress = false; // set while a snap-select drives place(), so it doesn't clear the selection
+
+  // Markers for the actual .hrz points, so you can see and snap onto them.
+  function isDirty(p){   // true if this point isn't in the last-saved baseline (new or edited)
+    const eps = 0.02;
+    return !savedHorizon.some(q => Math.abs(q[0]-p[0])<eps && Math.abs(q[1]-p[1])<eps);
+  }
+  function renderStripMarkers(){
+    stripPtsG.innerHTML = "";
+    horizon.forEach((p,i)=>{
+      const sel = i===selectedIdx, dirty = isDirty(p);
+      stripPtsG.appendChild(el("circle",{cx:sx(p[0]),cy:sy(p[1]),
+        r: sel?5:(dirty?3.5:2.5),
+        fill: sel?"var(--edge)":(dirty?"var(--danger-strong)":"var(--horizon-line)"),
+        stroke: sel?"#fff":"none","stroke-width":sel?1:0}));
+    });
+    const btn = document.getElementById('deletePtBtn'); if(btn) btn.disabled = selectedIdx < 0;
+  }
+
+  function renderStripBase(){
+    stripGrid.innerHTML = "";
+    stripGrid.appendChild(el("rect",{x:SPADL,y:SPADT,width:SW,height:SH,fill:"#0d1428",stroke:"var(--grid-strong)","stroke-width":0.5}));
+    [0,15,30,45,60,75,90].forEach(alt=>{
+      const y=sy(alt);
+      stripGrid.appendChild(el("line",{x1:SPADL,y1:y,x2:SPADL+SW,y2:y,stroke:"var(--grid)","stroke-width":alt===0?0.5:1,"stroke-dasharray":alt===0?"none":"3,4"}));
+      const t=el("text",{x:SPADL-6,y:y+3,fill:"var(--muted)","font-size":10,"font-family":"IBM Plex Mono, monospace","text-anchor":"end"});
+      t.textContent=alt+"°"; stripGrid.appendChild(t);
+    });
+    for(let az=0; az<=360; az+=30){
+      const x=sx(az);
+      stripGrid.appendChild(el("line",{x1:x,y1:SPADT,x2:x,y2:SPADT+SH,stroke:"var(--grid)","stroke-width":1}));
+      const card={0:"N",90:"E",180:"S",270:"W",360:"N"}[az];
+      const t=el("text",{x:x,y:SPADT+SH+15,fill:card?"var(--cardinal)":"var(--muted)","font-size":card?13:10,"font-weight":card?700:400,"font-family":card?"Barlow Condensed, sans-serif":"IBM Plex Mono, monospace","text-anchor":"middle"});
+      t.textContent = card||az; stripGrid.appendChild(t);
+    }
+    stripHorizonG.innerHTML="";
+    if(!horizon.length) { renderStripMarkers(); return; }
+    // Flat / clear 0° horizon default: a flat line along the 0° baseline, no fill.
+    if(horizon.reduce((m,p)=>Math.max(m,p[1]),-99) < 0.01){
+      stripHorizonG.appendChild(el("path",{d:"M"+sx(0).toFixed(1)+","+sy(0).toFixed(1)+" L"+sx(360).toFixed(1)+","+sy(0).toFixed(1), fill:"none", stroke:"var(--horizon-line)","stroke-width":2}));
+      renderStripMarkers();
+      return;
+    }
+    const sorted=[...horizon].sort((a,b)=>a[0]-b[0]);
+    // guarantee az 0 and az 360 endpoints so the horizon spans edge-to-edge and the loop closes
+    if(sorted[0][0] > 0) sorted.unshift([0, sorted[0][1]]);
+    if(sorted[sorted.length-1][0] < 360) sorted.push([360, sorted[sorted.length-1][1]]);
+    let ln="M"+sx(sorted[0][0]).toFixed(2)+","+sy(sorted[0][1]).toFixed(2)+" ";
+    for(let i=1;i<sorted.length;i++) ln+="L"+sx(sorted[i][0]).toFixed(2)+","+sy(sorted[i][1]).toFixed(2)+" ";
+    // close the fill DOWN to the horizon baseline (0°), so brown is always below the line
+    const fill=ln+"L"+sx(360).toFixed(2)+","+sy(0).toFixed(2)+" L"+sx(0).toFixed(2)+","+sy(0).toFixed(2)+" Z";
+    stripHorizonG.appendChild(el("path",{d:fill,fill:"var(--horizon-fill)","fill-opacity":0.85}));
+    stripHorizonG.appendChild(el("path",{d:ln,fill:"none",stroke:"var(--horizon-line)","stroke-width":2,"stroke-linejoin":"round"}));
+    renderStripMarkers();
+  }
+
+  function updateStrip(alt, az, fp){
+    stripDyn.innerHTML="";
+    if(az==null || isNaN(az)) return;
+    if(fp){
+      let d="", started=false, prev=null;
+      fp.ring.forEach(p=>{
+        if(prev!=null && Math.abs(p.az-prev)>180) started=false;   // wrap across 0/360 -> break path
+        d += (started?"L":"M")+sx(p.az).toFixed(2)+","+sy(Math.max(p.alt,0)).toFixed(2)+" ";
+        started=true; prev=p.az;
+      });
+      stripDyn.appendChild(el("path",{d,fill:"none",stroke:"var(--cursor)","stroke-width":1.5,"stroke-dasharray":"2,3"}));
+      stripDyn.appendChild(el("circle",{cx:sx(fp.worst.az),cy:sy(Math.max(fp.worst.alt,0)),r:4,fill:"var(--edge)"}));
+    }
+    const cx=sx(az), cy=sy(Math.max(alt,0));
+    stripDyn.appendChild(el("line",{x1:cx-11,y1:cy,x2:cx+11,y2:cy,stroke:"var(--cursor)","stroke-width":2}));
+    stripDyn.appendChild(el("line",{x1:cx,y1:cy-11,x2:cx,y2:cy+11,stroke:"var(--cursor)","stroke-width":2}));
+  }
+
+  strip.addEventListener('click',(evt)=>{
+    if(didPanStrip){ didPanStrip = false; return; }
+    const rect=strip.getBoundingClientRect(), vb=strip.viewBox.baseVal;
+    const px=(evt.clientX-rect.left)/rect.width*vb.width+vb.x;
+    const py=(evt.clientY-rect.top)/rect.height*vb.height+vb.y;
+    if(px<SPADL||px>SPADL+SW||py<SPADT||py>SPADT+SH) return;
+    // snap to the nearest existing point within ~12 screen px (scaled into viewBox units for zoom)
+    const thr = 12 * vb.width/rect.width;
+    let best=-1, bestD=thr;
+    horizon.forEach((p,i)=>{
+      const d = Math.hypot(sx(p[0])-px, sy(p[1])-py);
+      if(d < bestD){ bestD=d; best=i; }
+    });
+    if(best >= 0){
+      selectedIdx = best;
+      const a = horizon[best][0], h = horizon[best][1];
+      altIn.value = h.toFixed(1); azIn.value = a.toFixed(1);
+      snapInProgress = true; setTargetFromAltAz(h, a); place(h, a); snapInProgress = false;
+    } else {
+      selectedIdx = -1;
+      const az=(px-SPADL)/SW*360, alt=90-(py-SPADT)/SH*90;
+      altIn.value=alt.toFixed(1); azIn.value=az.toFixed(1);
+      setTargetFromAltAz(alt,az); place(alt,az);
+    }
+  });
+
+  document.getElementById('deletePtBtn').addEventListener('click', ()=>{
+    if(selectedIdx < 0 || selectedIdx >= horizon.length) return;
+    if(horizon.length <= 3) return;   // keep a minimal valid horizon
+    pushUndo();
+    horizon.splice(selectedIdx, 1);
+    selectedIdx = -1;
+    unsaved = true;
+    renderHorizon();      // redraws dome + strip base + markers
+    updateFileState();
+    saveHorizonLS();
+  });
+
+  // strip zoom (cursor-anchored) / pan — visual only, same pattern as the dome
+  let sview = {x:0, y:0, w:SVBW, h:SVBH};
+  const SVIEW_MINW = SVBW/8;
+  function applyStripView(){ strip.setAttribute('viewBox', sview.x+" "+sview.y+" "+sview.w+" "+sview.h); }
+  function clampStripPan(){
+    sview.x = Math.max(0, Math.min(SVBW - sview.w, sview.x));
+    sview.y = Math.max(0, Math.min(SVBH - sview.h, sview.y));
+  }
+  strip.addEventListener('wheel', (evt)=>{
+    evt.preventDefault();
+    const rect = strip.getBoundingClientRect();
+    const fx = (evt.clientX-rect.left)/rect.width, fy = (evt.clientY-rect.top)/rect.height;
+    const px = sview.x + fx*sview.w, py = sview.y + fy*sview.h;
+    const factor = evt.deltaY < 0 ? 0.85 : 1/0.85;
+    let nw = Math.max(SVIEW_MINW, Math.min(SVBW, sview.w*factor));
+    const k = nw/sview.w, nh = sview.h*k;
+    sview.x = px - fx*nw; sview.y = py - fy*nh; sview.w = nw; sview.h = nh;
+    clampStripPan(); applyStripView();
+  }, {passive:false});
+  let spanning = false, didPanStrip = false, spanStart = null;
+  strip.addEventListener('mousedown', (evt)=>{
+    spanning = true; didPanStrip = false;
+    spanStart = {cx:evt.clientX, cy:evt.clientY, vx:sview.x, vy:sview.y};
+  });
+  window.addEventListener('mousemove', (evt)=>{
+    if(!spanning || sview.w >= SVBW) return;
+    const rect = strip.getBoundingClientRect();
+    const ddx = evt.clientX-spanStart.cx, ddy = evt.clientY-spanStart.cy;
+    if(Math.abs(ddx)+Math.abs(ddy) > 4) didPanStrip = true;
+    sview.x = spanStart.vx - ddx/rect.width*sview.w;
+    sview.y = spanStart.vy - ddy/rect.height*sview.h;
+    clampStripPan(); applyStripView();
+  });
+  window.addEventListener('mouseup', ()=>{ spanning = false; });
+
+  renderHorizon();
+
+  // ---------- interaction ----------
+  const altIn = document.getElementById('altIn');
+  const azIn = document.getElementById('azIn');
+  const readout = document.getElementById('readout');
+  const confirmBtn = document.getElementById('confirmBtn');
+
+  function place(alt, az){
+    az = ((az%360)+360)%360;
+    const clampedAlt = Math.max(-10, Math.min(90, alt));
+    const [x,y] = project(az, Math.max(clampedAlt,0));
+    cursor.setAttribute("transform","translate("+x.toFixed(2)+","+y.toFixed(2)+")");
+    cursor.setAttribute("visibility", clampedAlt<0 ? "hidden" : "visible");
+
+    const fp = fovFootprint(alt, az);
+
+    function line(a, label){
+      const lim = horizonAltAt(a.az);
+      const vis = a.alt >= 0 && a.alt >= lim;
+      const cls = a.alt<0 ? "blocked" : (vis ? "ok" : "blocked");
+      const txt = a.alt<0 ? "below mathematical horizon"
+        : (vis ? "above current horizon line" : "below current horizon line (obstruction ≈ "+lim.toFixed(1)+"°)");
+      return label+" &nbsp;Alt "+a.alt.toFixed(1)+"°&nbsp; / &nbsp;Az "+a.az.toFixed(1)+"° &mdash; <span class='status "+cls+"'>"+txt+"</span>";
+    }
+
+    if(fp){
+      renderRing(fp.ring);
+      showEdgeDot(fp.worst, true);
+      readout.innerHTML =
+        line({alt:clampedAlt, az}, "Frame center") + "<br>" +
+        "<span style='color:var(--muted)'>FOV ring radius "+fp.radius.toFixed(2)+"°, lowest edge Alt "+fp.worst.alt.toFixed(1)+"° &mdash; visual guide only</span><br>" +
+        "<b>Confirm saves the frame center (matches NINA).</b>";
+    } else {
+      renderRing(null);
+      showEdgeDot(null, false);
+      readout.innerHTML = line({alt:clampedAlt, az}, "Target");
+    }
+    updateStrip(clampedAlt, az, fp);
+    if(!snapInProgress) selectedIdx = -1;   // moving the cursor elsewhere deselects any snapped point
+    renderStripMarkers();
+    confirmBtn.disabled = false;
+  }
+
+  document.getElementById('goBtn').addEventListener('click', ()=>{
+    const alt = parseFloat(altIn.value), az = parseFloat(azIn.value);
+    if(!isNaN(alt) && !isNaN(az)){ setTargetFromAltAz(alt, az); place(alt, az); }
+  });
+
+  // Az-nudge only — [data-nudge] excludes the time buttons (which carry
+  // data-tsec) so a time click no longer accidentally fires this handler too.
+  document.querySelectorAll('.nudge button[data-nudge]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const d = parseFloat(btn.getAttribute('data-nudge'));
+      let az = ((parseFloat(azIn.value)||0) + d + 360) % 360;
+      azIn.value = az.toFixed(1);
+      const alt = parseFloat(altIn.value);
+      if(!isNaN(alt)){ setTargetFromAltAz(alt, az); place(alt, az); }
+    });
+  });
+
+  function pointFromEvent(evt){
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    const px = (evt.clientX - rect.left) / rect.width * vb.width + vb.x;
+    const py = (evt.clientY - rect.top) / rect.height * vb.height + vb.y;
+    return unproject(px, py);
+  }
+  svg.addEventListener('click', (evt)=>{
+    if(didPan){ didPan = false; return; }   // a drag-to-pan, not a point placement
+    const {alt, az} = pointFromEvent(evt);
+    if(alt < -10 || alt > 92) return;
+    altIn.value = alt.toFixed(1); azIn.value = az.toFixed(1);
+    setTargetFromAltAz(alt, az);
+    place(alt, az);
+  });
+
+  // ---------- view zoom / pan (visual only — coordinates are unaffected) ----------
+  const VIEW_FULL = 620;          // original viewBox size (square)
+  const VIEW_MIN = VIEW_FULL/8;   // deepest zoom-in = 8×
+  let view = {x:0, y:0, w:VIEW_FULL, h:VIEW_FULL};
+  function applyView(){ svg.setAttribute('viewBox', view.x+" "+view.y+" "+view.w+" "+view.h); }
+  function clampPan(){
+    view.x = Math.max(0, Math.min(VIEW_FULL - view.w, view.x));
+    view.y = Math.max(0, Math.min(VIEW_FULL - view.h, view.y));
+  }
+  svg.addEventListener('wheel', (evt)=>{
+    evt.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const fx = (evt.clientX - rect.left) / rect.width;
+    const fy = (evt.clientY - rect.top) / rect.height;
+    const sx = view.x + fx*view.w, sy = view.y + fy*view.h;   // SVG point under cursor
+    const factor = evt.deltaY < 0 ? 0.85 : 1/0.85;            // wheel up = zoom in
+    let nw = Math.max(VIEW_MIN, Math.min(VIEW_FULL, view.w*factor));
+    view.x = sx - fx*nw;        // keep the point under the cursor fixed
+    view.y = sy - fy*nw;
+    view.w = nw; view.h = nw;
+    clampPan();
+    applyView();
+  }, {passive:false});
+
+  let panning = false, didPan = false, panStart = null;
+  svg.addEventListener('mousedown', (evt)=>{
+    panning = true; didPan = false;
+    panStart = {cx:evt.clientX, cy:evt.clientY, vx:view.x, vy:view.y};
+  });
+  window.addEventListener('mousemove', (evt)=>{
+    if(!panning || view.w >= VIEW_FULL) return;   // nothing to pan when fully zoomed out
+    const rect = svg.getBoundingClientRect();
+    const ddx = evt.clientX - panStart.cx, ddy = evt.clientY - panStart.cy;
+    if(Math.abs(ddx)+Math.abs(ddy) > 4) didPan = true;
+    view.x = panStart.vx - ddx/rect.width*view.w;
+    view.y = panStart.vy - ddy/rect.height*view.h;
+    clampPan();
+    applyView();
+  });
+  window.addEventListener('mouseup', ()=>{ panning = false; });
+
+  // ---------- upsert / confirm ----------
+  // ---- undo history for horizon edits (Confirm/overwrite and Delete) ----
+  let undoStack = [];
+  const UNDO_MAX = 50;
+  function updateUndoBtn(){ const b=document.getElementById('undoBtn'); if(b) b.disabled = undoStack.length===0; }
+  function pushUndo(){
+    undoStack.push(horizon.map(p=>[p[0],p[1]]));   // deep copy before mutating
+    if(undoStack.length > UNDO_MAX) undoStack.shift();
+    updateUndoBtn();
+  }
+  document.getElementById('undoBtn').addEventListener('click', ()=>{
+    if(!undoStack.length) return;
+    horizon = undoStack.pop();
+    selectedIdx = -1;
+    unsaved = true;
+    renderHorizon();
+    updateFileState();
+    updateUndoBtn();
+    saveHorizonLS();
+  });
+
+  function upsertPoint(az, alt){
+    pushUndo();
+    az = ((az%360)+360)%360;
+    const eps = 0.05;
+    function setOne(a){
+      const idx = horizon.findIndex(p=>Math.abs(p[0]-a)<eps);
+      if(idx>=0) horizon[idx][1]=alt; else horizon.push([a,alt]);
+    }
+    setOne(az);
+    if(az<eps || Math.abs(az-360)<eps){ setOne(0); setOne(360); }
+    horizon.sort((a,b)=>a[0]-b[0]);
+    unsaved = true;
+    renderHorizon();
+    updateFileState();
+    saveHorizonLS();
+  }
+
+  confirmBtn.addEventListener('click', ()=>{
+    const alt = parseFloat(altIn.value), az = parseFloat(azIn.value);
+    if(isNaN(alt) || isNaN(az)) return;
+    upsertPoint(az, alt);   // Scenario A: always save the frame CENTRE (crosshair), matching NINA's center-vs-horizon check
+    place(alt, az);
+  });
+
+  // ---------- RA/Dec -> Alt/Az ----------
+  // Returns {value, single}: single=true means the string was one bare number
+  // (ambiguous units); false means space-separated h/m/s or d/m/s (unambiguous).
+  function parseSexaRaw(str){
+    str = str.trim();
+    if(str === "") return null;
+    const neg = /^-/.test(str.trim());
+    const parts = str.replace(/[^\d.\-]+/g," ").trim().split(/\s+/).map(Number);
+    if(parts.some(isNaN)) return null;
+    let val;
+    if(parts.length===1) val = Math.abs(parts[0]);
+    else if(parts.length===2) val = Math.abs(parts[0]) + parts[1]/60;
+    else val = Math.abs(parts[0]) + parts[1]/60 + parts[2]/3600;
+    return {value: neg ? -val : val, single: parts.length===1};
+  }
+  function parseSexa(str){
+    const r = parseSexaRaw(str);
+    return r ? r.value : NaN;
+  }
+  // RA-specific: a single bare number is degrees or hours depending on raUnitMode;
+  // space-separated h/m/s is always hours (standard convention, unambiguous).
+  let raUnitMode = "deg";
+  function parseRaHours(str){
+    const r = parseSexaRaw(str);
+    if(!r) return NaN;
+    if(r.single && raUnitMode === "deg") return r.value/15;
+    return r.value;
+  }
+  document.getElementById('raDeg').addEventListener('click', function(){ raUnitMode="deg"; this.classList.add('active'); document.getElementById('raHrs').classList.remove('active'); });
+  document.getElementById('raHrs').addEventListener('click', function(){ raUnitMode="hours"; this.classList.add('active'); document.getElementById('raDeg').classList.remove('active'); });
+
+  // Flexible date/time paste: ISO ("2026-09-17 20:19:07") or US slash
+  // ("9/17/2026 20:19:07" or "9/17/26 8:19:07 PM"). Returns {y,mo,d,h,mi,s} or null.
+  function parseFlexibleDateTime(str){
+    str = str.trim();
+    let m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})[T ](\d{1,2}):(\d{2})(?::(\d{1,2}(?:\.\d+)?))?\s*(AM|PM)?$/i);
+    if(m){
+      let h = +m[4];
+      if(m[7]){ h = h%12; if(/pm/i.test(m[7])) h += 12; }
+      return {y:+m[1], mo:+m[2], d:+m[3], h, mi:+m[5], s: m[6]?parseFloat(m[6]):0};
+    }
+    m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[ ,]+(\d{1,2}):(\d{2})(?::(\d{1,2}(?:\.\d+)?))?\s*(AM|PM)?$/i);
+    if(m){
+      let y = +m[3]; if(y<100) y += 2000;
+      let h = +m[4];
+      if(m[7]){ h = h%12; if(/pm/i.test(m[7])) h += 12; }
+      return {y, mo:+m[1], d:+m[2], h, mi:+m[5], s: m[6]?parseFloat(m[6]):0};
+    }
+    return null;
+  }
+  function fovRadiusDeg(){
+    const w = parseFloat(document.getElementById('sensorW').value);
+    const h = parseFloat(document.getElementById('sensorH').value);
+    const f = parseFloat(document.getElementById('focalLen').value);
+    if(!(w>0) || !(h>0) || !(f>0)) return null;
+    const diag = Math.sqrt(w*w + h*h);
+    const fovDiagRad = 2*Math.atan((diag/2)/f);
+    return toDeg(fovDiagRad)/2;
+  }
+  function toJulianDateUTC(date){ return date.getTime()/86400000 + 2440587.5; }
+  function gmstHours(jd){
+    const T = (jd - 2451545.0)/36525.0;
+    let gmst = 280.46061837 + 360.98564736629*(jd-2451545.0) + 0.000387933*T*T - (T*T*T)/38710000.0;
+    gmst = ((gmst%360)+360)%360;
+    return gmst/15;
+  }
+
+  let tzMode = "local";
+  document.getElementById('tzLocal').addEventListener('click', function(){ tzMode="local"; this.classList.add('active'); document.getElementById('tzUtc').classList.remove('active'); });
+  document.getElementById('tzUtc').addEventListener('click', function(){ tzMode="utc"; this.classList.add('active'); document.getElementById('tzLocal').classList.remove('active'); });
+
+  // default the datetime field to "now", in the unambiguous ISO-ish format the parser accepts
+  (function(){
+    const now = new Date();
+    const p = n=>String(n).padStart(2,'0');
+    document.getElementById('dtIn').value =
+      now.getFullYear()+"-"+p(now.getMonth()+1)+"-"+p(now.getDate())+" "+p(now.getHours())+":"+p(now.getMinutes());
+  })();
+
+  function buildDateObj(parsed, mode){
+    if(mode === "utc") return new Date(Date.UTC(parsed.y, parsed.mo-1, parsed.d, parsed.h, parsed.mi, parsed.s));
+    return new Date(parsed.y, parsed.mo-1, parsed.d, parsed.h, parsed.mi, parsed.s);
+  }
+  function formatDtString(dateObj, mode){
+    const p = n=>String(Math.trunc(n)).padStart(2,'0');
+    const y = mode==="utc" ? dateObj.getUTCFullYear() : dateObj.getFullYear();
+    const mo = (mode==="utc" ? dateObj.getUTCMonth() : dateObj.getMonth())+1;
+    const d = mode==="utc" ? dateObj.getUTCDate() : dateObj.getDate();
+    const h = mode==="utc" ? dateObj.getUTCHours() : dateObj.getHours();
+    const mi = mode==="utc" ? dateObj.getUTCMinutes() : dateObj.getMinutes();
+    const s = mode==="utc" ? dateObj.getUTCSeconds() : dateObj.getSeconds();
+    return y+"-"+p(mo)+"-"+p(d)+" "+p(h)+":"+p(mi)+":"+p(s);
+  }
+
+  // ---- tracked celestial target ----------------------------------------
+  // {raDeg, dec} of the point the cursor represents. Updated whenever the
+  // cursor is moved by ANY means (Convert, chart click, Place cursor, Az-nudge)
+  // so the time-nudge buttons trace THIS point's path across the sky, not only
+  // the last RA/Dec typed into the converter.
+  let currentTarget = null;
+  function currentLST(){
+    const parsed = parseFlexibleDateTime(document.getElementById('dtIn').value);
+    if(!parsed) return null;
+    const jd = toJulianDateUTC(buildDateObj(parsed, tzMode));
+    let lst = gmstHours(jd) + LON/15;
+    return ((lst%24)+24)%24;
+  }
+  function setTargetFromAltAz(alt, az){
+    const lst = currentLST();
+    if(lst == null){ currentTarget = null; return; }
+    const {H, dec} = altazToHDec(alt, az);
+    currentTarget = {raDeg: ((lst*15 - H)%360 + 360)%360, dec};
+  }
+  // Re-derive Alt/Az for the tracked target at the current (nudged) time.
+  function retrackFromTarget(){
+    const out = document.getElementById('convertOut');
+    const lst = currentLST();
+    if(!currentTarget || lst == null){ doConvert(); return; }   // nothing tracked yet
+    const H = ((lst*15 - currentTarget.raDeg)%360 + 360)%360;
+    const center = equatorial(H, currentTarget.dec);
+    out.innerHTML = "Tracking &nbsp;RA "+(currentTarget.raDeg/15).toFixed(4)+"h ("+currentTarget.raDeg.toFixed(3)+"°)"+
+      " &nbsp; Dec "+currentTarget.dec.toFixed(3)+"° &nbsp; LST "+lst.toFixed(4)+"h &nbsp; H "+H.toFixed(2)+"°";
+    altIn.value = center.alt.toFixed(2);
+    azIn.value = center.az.toFixed(2);
+    place(center.alt, center.az);
+  }
+
+  function doConvert(){
+    const out = document.getElementById('convertOut');
+    if(!siteValid()){ out.innerHTML = "<span class='status blocked'>Enter your site Lat/Lon (top of the page) first.</span>"; return false; }
+    const raH = parseRaHours(document.getElementById('raIn').value);
+    const decD = parseSexa(document.getElementById('decIn').value);
+    const dtVal = document.getElementById('dtIn').value;
+    const parsed = parseFlexibleDateTime(dtVal);
+    if(isNaN(raH) || isNaN(decD) || !parsed){
+      out.innerHTML = "<span class='status blocked'>Couldn't parse RA, Dec or date/time. Expected date/time like <code>9/17/2026 20:19:07</code> or <code>2026-09-17 20:19:07</code>.</span>";
+      return false;
+    }
+    const dateObj = buildDateObj(parsed, tzMode);
+    const jd = toJulianDateUTC(dateObj);
+    const gmst = gmstHours(jd);
+    let lst = gmst + LON/15;
+    lst = ((lst%24)+24)%24;
+    const raDeg = raH*15;
+    let H = (lst*15 - raDeg + 360) % 360;
+    const center = equatorial(H, decD);
+    currentTarget = {raDeg: ((raDeg%360)+360)%360, dec: decD};
+
+    out.innerHTML = "RA read as "+raH.toFixed(4)+"h ("+(raDeg%360).toFixed(3)+"°) &nbsp; LST "+lst.toFixed(4)+"h &nbsp; H "+H.toFixed(2)+"°";
+
+    altIn.value = center.alt.toFixed(2);
+    azIn.value = center.az.toFixed(2);
+    place(center.alt, center.az);
+    return true;
+  }
+
+  // Snapshot of the last user-entered RA/Dec/time (+ unit/tz toggles), so the
+  // Reset button can restore the exact entry after nudges have changed things.
+  let lastEntry = null;
+  const resetEntryBtn = document.getElementById('resetEntryBtn');
+  document.getElementById('convertBtn').addEventListener('click', ()=>{
+    if(doConvert()){
+      lastEntry = {
+        ra: document.getElementById('raIn').value,
+        dec: document.getElementById('decIn').value,
+        dt: document.getElementById('dtIn').value,
+        raUnitMode, tzMode
+      };
+      resetEntryBtn.disabled = false;
+    }
+  });
+  resetEntryBtn.addEventListener('click', ()=>{
+    if(!lastEntry) return;
+    document.getElementById('raIn').value = lastEntry.ra;
+    document.getElementById('decIn').value = lastEntry.dec;
+    document.getElementById('dtIn').value = lastEntry.dt;
+    raUnitMode = lastEntry.raUnitMode;
+    document.getElementById('raDeg').classList.toggle('active', raUnitMode==='deg');
+    document.getElementById('raHrs').classList.toggle('active', raUnitMode==='hours');
+    tzMode = lastEntry.tzMode;
+    document.getElementById('tzLocal').classList.toggle('active', tzMode==='local');
+    document.getElementById('tzUtc').classList.toggle('active', tzMode==='utc');
+    doConvert();
+  });
+
+  document.querySelectorAll('[data-tsec]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const dtInEl = document.getElementById('dtIn');
+      const parsed = parseFlexibleDateTime(dtInEl.value);
+      if(!parsed) return;
+      const dateObj = buildDateObj(parsed, tzMode);
+      dateObj.setTime(dateObj.getTime() + parseFloat(btn.getAttribute('data-tsec'))*1000);
+      dtInEl.value = formatDtString(dateObj, tzMode);
+      retrackFromTarget();
+    });
+  });
+
+  // ---------- File System Access: open / save ----------
+  const supported = 'showOpenFilePicker' in window;
+  const openBtn = document.getElementById('openBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const fileState = document.getElementById('fileState');
+
+  function updateFileState(){
+    if(!fileHandle){
+      fileState.innerHTML = "<span class='dot amber'></span>no file opened";
+      fileState.title = "Editing the bundled snapshot only — open a .hrz file to save changes.";
+      saveBtn.disabled = true;
+      return;
+    }
+    if(unsaved){
+      fileState.innerHTML = "<span class='dot red'></span>"+fileHandle.name+" (unsaved)";
+      fileState.title = "Unsaved changes.";
+      saveBtn.disabled = false;
+    } else {
+      fileState.innerHTML = "<span class='dot green'></span>"+fileHandle.name+" (up to date)";
+      fileState.title = "";
+      saveBtn.disabled = true;
+    }
+  }
+
+  function parseHrz(text){
+    const lines = text.split(/\r?\n/);
+    const pts = [];
+    for(const line of lines){
+      const t = line.trim();
+      if(!t) continue;
+      const parts = t.split(/\t+| {2,}|\s+/).map(Number);
+      if(parts.length>=2 && !isNaN(parts[0]) && !isNaN(parts[1])){
+        // last two numeric tokens are az, alt (handles an accidental leading index column)
+        const az = parts[parts.length-2], alt = parts[parts.length-1];
+        pts.push([az, alt]);
+      }
+    }
+    return pts;
+  }
+  function serializeHrz(pts){
+    const sorted = [...pts].sort((a,b)=>a[0]-b[0]);
+    return sorted.map(p=> (Math.round(p[0]*100)/100) + "\t" + (Math.round(p[1]*100)/100)).join("\r\n") + "\r\n";
+  }
+
+  if(!supported){
+    openBtn.disabled = true;
+    fileState.innerHTML = "<span class='dot red'></span>needs Chrome/Edge";
+    fileState.title = "This browser doesn't support direct file access. Open this page in Chrome or Edge on Windows to load/save the .hrz file.";
+  }
+
+  openBtn.addEventListener('click', async ()=>{
+    try{
+      const [handle] = await window.showOpenFilePicker({
+        types: [{description:'NINA horizon file', accept:{'text/plain':['.hrz']}}],
+        excludeAcceptAllOption:false
+      });
+      const file = await handle.getFile();
+      const text = await file.text();
+      const pts = parseHrz(text);
+      if(pts.length < 3){
+        fileState.innerHTML = "<span class='dot red'></span>Couldn't find horizon points in that file.";
+        return;
+      }
+      horizon = pts;
+      savedHorizon = pts.map(p=>[p[0],p[1]]);   // loaded file becomes the baseline (no red markers)
+      fileHandle = handle;
+      unsaved = false;
+      undoStack = []; updateUndoBtn();   // fresh history for the newly loaded file
+      selectedIdx = -1;
+      renderHorizon();
+      updateFileState();
+      saveHorizonLS();
+    }catch(err){
+      if(err.name !== 'AbortError'){
+        fileState.innerHTML = "<span class='dot red'></span>open failed";
+        fileState.title = err.message;
+      }
+    }
+  });
+
+  saveBtn.addEventListener('click', async ()=>{
+    if(!fileHandle) return;
+    try{
+      const perm = await fileHandle.requestPermission({mode:'readwrite'});
+      if(perm !== 'granted'){
+        fileState.innerHTML = "<span class='dot red'></span>permission denied";
+        return;
+      }
+      const writable = await fileHandle.createWritable();
+      await writable.write(serializeHrz(horizon));
+      await writable.close();
+      unsaved = false;
+      savedHorizon = horizon.map(p=>[p[0],p[1]]);   // new baseline -> clears the red "unsaved" markers
+      renderStripMarkers();
+      updateFileState();
+      saveHorizonLS();
+    }catch(err){
+      fileState.innerHTML = "<span class='dot red'></span>save failed";
+      fileState.title = err.message;
+    }
+  });
+
+  // ---------- site/camera persistence ----------
+  let storageOK = true;
+  try{ localStorage.setItem('__hrz_test__','1'); localStorage.removeItem('__hrz_test__'); }
+  catch(e){ storageOK = false; }
+  if(!storageOK) document.getElementById('persistNote').style.display = 'block';
+
+  const latIn2 = document.getElementById('latIn2');
+  const lonIn2 = document.getElementById('lonIn2');
+  const sensorW = document.getElementById('sensorW');
+  const sensorH = document.getElementById('sensorH');
+  const focalLen = document.getElementById('focalLen');
+
+  const PKEYS = {lat:'horizonEditor.lat', lon:'horizonEditor.lon', sw:'horizonEditor.sensorW', sh:'horizonEditor.sensorH', fl:'horizonEditor.focalLen', hz:'horizonEditor.horizon'};
+
+  if(storageOK){
+    try{
+      const sv = (k)=>localStorage.getItem(k);
+      if(sv(PKEYS.lat)!=null) latIn2.value = sv(PKEYS.lat);
+      if(sv(PKEYS.lon)!=null) lonIn2.value = sv(PKEYS.lon);
+      if(sv(PKEYS.sw)!=null) sensorW.value = sv(PKEYS.sw);
+      if(sv(PKEYS.sh)!=null) sensorH.value = sv(PKEYS.sh);
+      if(sv(PKEYS.fl)!=null) focalLen.value = sv(PKEYS.fl);
+      // Restore the last horizon (remembered across opens until a new one loads).
+      const hzRaw = sv(PKEYS.hz);
+      if(hzRaw){
+        const pts = JSON.parse(hzRaw);
+        if(Array.isArray(pts) && pts.length >= 2){
+          horizon = pts;
+          savedHorizon = pts.map(p=>[p[0],p[1]]);
+          renderHorizon();
+        }
+      }
+    }catch(e){}
+  }
+
+  function saveHorizonLS(){
+    if(!storageOK) return;
+    try{ localStorage.setItem(PKEYS.hz, JSON.stringify(horizon)); }catch(e){}
+  }
+
+  {
+    const lat = parseFloat(latIn2.value), lon = parseFloat(lonIn2.value);
+    LAT = isNaN(lat) ? null : lat;
+    LON = isNaN(lon) ? null : lon;
+  }
+  renderEquatorial();
+
+  function saveSiteCam(){
+    if(!storageOK) return;
+    try{
+      localStorage.setItem(PKEYS.lat, latIn2.value);
+      localStorage.setItem(PKEYS.lon, lonIn2.value);
+      localStorage.setItem(PKEYS.sw, sensorW.value);
+      localStorage.setItem(PKEYS.sh, sensorH.value);
+      localStorage.setItem(PKEYS.fl, focalLen.value);
+    }catch(e){}
+  }
+  function onLatLon(){
+    const lat = parseFloat(latIn2.value), lon = parseFloat(lonIn2.value);
+    LAT = isNaN(lat) ? null : lat;
+    LON = isNaN(lon) ? null : lon;
+    renderEquatorial();
+    if(typeof renderSun === 'function') renderSun();
+    saveSiteCam();
+  }
+  // Save on every keystroke ('input'), not just on blur ('change') — otherwise
+  // closing the tab/app before the field loses focus dropped the values.
+  ['input','change'].forEach(ev=>{
+    latIn2.addEventListener(ev, onLatLon);
+    lonIn2.addEventListener(ev, onLatLon);
+    [sensorW, sensorH, focalLen].forEach(inp=>inp.addEventListener(ev, saveSiteCam));
+  });
+
+  // ---------- Sun position + 30° exclusion zone (daytime safety) ----------
+  // Low-precision solar coordinates (Astronomical Almanac / Meeus), good to
+  // ~arcminutes — far more than enough for a 30° keep-out. Tracks REAL current
+  // time (not the planning field), because as a safety cue it must show where
+  // the Sun actually is right now.
+  const SUN_EXCLUSION = 30;
+  let SUN = null;
+  function sunAltAz(date){
+    const jd = date.getTime()/86400000 + 2440587.5;
+    const n = jd - 2451545.0;
+    const L = ((280.460 + 0.9856474*n)%360+360)%360;
+    const g = toRad(((357.528 + 0.9856003*n)%360+360)%360);
+    const lambda = toRad(L + 1.915*Math.sin(g) + 0.020*Math.sin(2*g));
+    const eps = toRad(23.439 - 0.0000004*n);
+    const raDeg = (toDeg(Math.atan2(Math.cos(eps)*Math.sin(lambda), Math.cos(lambda)))+360)%360;
+    const decDeg = toDeg(Math.asin(Math.sin(eps)*Math.sin(lambda)));
+    const lst = ((gmstHours(jd) + LON/15)%24+24)%24;
+    const H = (lst*15 - raDeg + 360)%360;
+    const p = equatorial(H, decDeg);
+    return {alt:p.alt, az:p.az, ra:raDeg, dec:decDeg};
+  }
+  function angularSep(a1,z1,a2,z2){
+    const A1=toRad(a1), A2=toRad(a2);
+    const c = Math.sin(A1)*Math.sin(A2) + Math.cos(A1)*Math.cos(A2)*Math.cos(toRad(z1-z2));
+    return toDeg(Math.acos(Math.max(-1,Math.min(1,c))));
+  }
+  // Today's solar arc: sample the Sun every 10 min over the current local day.
+  function sunDayPath(){
+    const now = new Date();
+    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const pts = [];
+    for(let m=0; m<=1440; m+=10) pts.push(sunAltAz(new Date(start.getTime() + m*60000)));
+    return pts;
+  }
+  function drawSunInto(g, isStrip, path){
+    g.innerHTML = "";
+    // dotted daily trajectory (only the above-horizon arc)
+    let d="", pen=false, prev=null;
+    path.forEach(p=>{
+      if(p.alt < 0){ pen=false; prev=null; return; }
+      let X,Y;
+      if(isStrip){ if(prev!=null && Math.abs(p.az-prev)>180) pen=false; X=sx(p.az); Y=sy(p.alt); prev=p.az; }
+      else { const xy=project(p.az, p.alt); X=xy[0]; Y=xy[1]; }
+      d += (pen?"L":"M")+X.toFixed(1)+","+Y.toFixed(1)+" "; pen=true;
+    });
+    if(d) g.appendChild(el("path",{d, fill:"none", stroke:"var(--sun)","stroke-width":1,"stroke-opacity":0.55,"stroke-dasharray":"1,5","stroke-linecap":"round"}));
+
+    if(!SUN || SUN.alt <= 0) return;   // dot + exclusion zone only when the Sun is up
+    const ring = fovRingAroundAltAz(SUN.alt, SUN.az, SUN_EXCLUSION, 48);
+    let z="", started=false, pz=null, wrapped=false;
+    ring.forEach(p=>{
+      let X,Y;
+      if(isStrip){ if(pz!=null && Math.abs(p.az-pz)>180){ started=false; wrapped=true; } X=sx(p.az); Y=sy(Math.max(p.alt,0)); pz=p.az; }
+      else { const xy=project(p.az, Math.max(p.alt,0)); X=xy[0]; Y=xy[1]; }
+      z += (started?"L":"M")+X.toFixed(2)+","+Y.toFixed(2)+" "; started=true;
+    });
+    if(!isStrip || !wrapped) z += "Z";   // close the loop (strip: only when it doesn't wrap past N)
+    g.appendChild(el("path",{d:z, fill:isStrip?"none":"var(--sun)", "fill-opacity":isStrip?0:0.12, stroke:"var(--sun)","stroke-width":1.5,"stroke-dasharray":"4,4"}));
+    let cx,cy;
+    if(isStrip){ cx=sx(SUN.az); cy=sy(SUN.alt); } else { const xy=project(SUN.az,SUN.alt); cx=xy[0]; cy=xy[1]; }
+    g.appendChild(el("circle",{cx,cy,r:isStrip?5:7, fill:"var(--sun)", stroke:"#7a5c00","stroke-width":1}));
+  }
+  function renderSun(){
+    if(!siteValid()){ sunGroupDome.innerHTML=""; sunGroupStrip.innerHTML=""; SUN=null; return; }
+    SUN = sunAltAz(new Date());
+    const path = sunDayPath();
+    drawSunInto(sunGroupDome, false, path);
+    drawSunInto(sunGroupStrip, true, path);
+  }
+  renderSun();
+  setInterval(renderSun, 30000);   // live: refresh every 30 s
+
+  // ---------- mount control via the local GSS bridge (same-origin /api) ----------
+  (function(){
+    const panel = document.getElementById('mountControls');
+    const unavail = document.getElementById('mountUnavailable');
+    const statusEl = document.getElementById('mountStatus');
+    const connectBtn = document.getElementById('mountConnectBtn');
+    const slewBtn = document.getElementById('slewBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const trackBtn = document.getElementById('trackBtn');
+    const mountReadout = document.getElementById('mountReadout');
+    let connected = false, trackingOn = false;
+    let lastSiteLat = null, lastSiteLon = null;
+
+    // When the mount is connected, adopt ITS site (SiteLatitude/Longitude) for
+    // the app's Sun / celestial math, so everything is correct at whatever
+    // location the mount is set up at — no manual Lat/Lon entry needed.
+    function adoptMountSite(lat, lon){
+      if(lat == null || lon == null) return;
+      if(lat === lastSiteLat && lon === lastSiteLon) return;
+      lastSiteLat = lat; lastSiteLon = lon;
+      LAT = lat; LON = lon;
+      latIn2.value = Math.round(lat*1e6)/1e6;
+      lonIn2.value = Math.round(lon*1e6)/1e6;
+      renderEquatorial();
+      renderSun();
+      saveSiteCam();
+    }
+
+    async function api(path, opts){
+      const r = await fetch(path, Object.assign({cache:'no-store'}, opts||{}));
+      if(!r.ok){ let e; try{ e = await r.json(); }catch(_){} throw new Error((e&&e.error)||('HTTP '+r.status)); }
+      return r.json();
+    }
+    const fmt = (v,d)=> (v==null||isNaN(v)) ? '—' : Number(v).toFixed(d);
+
+    function render(s){
+      connected = !!(s && s.connected);
+      slewBtn.disabled = !connected;
+      stopBtn.disabled = !connected;
+      trackBtn.disabled = !connected;
+      connectBtn.disabled = connected;
+      connectBtn.textContent = connected ? 'Connected ✓' : 'Connect to mount';
+      if(!s){ statusEl.innerHTML = "<span class='dot red'></span>bridge error"; return; }
+      if(connected){
+        trackingOn = !!s.tracking;
+        trackBtn.textContent = 'Tracking: ' + (trackingOn ? 'ON' : 'OFF');
+        adoptMountSite(s.siteLat, s.siteLon);
+        statusEl.innerHTML = "<span class='dot green'></span>connected" + (s.slewing ? " <b style='color:var(--warn)'>(slewing…)</b>" : "");
+        mountReadout.innerHTML =
+          "Alt "+fmt(s.alt,2)+"° / Az "+fmt(s.az,2)+"°<br>"+
+          "RA "+fmt(s.ra,4)+"h / Dec "+fmt(s.dec,3)+"°<br>"+
+          "LST "+fmt(s.lst,3)+"h · Tracking "+(s.tracking?'on':'off')+(s.atpark?' · PARKED':'');
+      } else {
+        statusEl.innerHTML = "<span class='dot amber'></span>bridge found — not connected";
+        mountReadout.innerHTML = "—";
+      }
+    }
+    async function poll(){ try{ render(await api('api/status')); }catch(e){ render(null); } }
+
+    (async function detect(){
+      try {
+        const s = await api('api/status');   // only resolves when served by the bridge
+        unavail.style.display = 'none';
+        panel.style.display = 'block';
+        render(s);
+        setInterval(poll, 1200);
+      } catch(e){ /* no bridge (file://) — keep the "run the bridge" hint */ }
+    })();
+
+    connectBtn.addEventListener('click', async ()=>{
+      connectBtn.disabled = true; connectBtn.textContent = 'Connecting…';
+      try { render(await api('api/connect', {method:'POST'})); }
+      catch(e){ statusEl.innerHTML = "<span class='dot red'></span>"+e.message; connectBtn.disabled=false; connectBtn.textContent='Connect to mount'; }
+    });
+
+    slewBtn.addEventListener('click', async ()=>{
+      const alt = parseFloat(altIn.value), az = parseFloat(azIn.value);
+      if(isNaN(alt) || isNaN(az)) return;
+      // Sun safety: block-with-override if the target is inside the 30° solar exclusion zone (real now).
+      const sun = sunAltAz(new Date());
+      if(sun.alt > 0){
+        const sep = angularSep(alt, az, sun.alt, sun.az);
+        if(sep < SUN_EXCLUSION && !confirm("⚠ SUN SAFETY\n\nTarget is only "+sep.toFixed(1)+"° from the Sun — inside the "+SUN_EXCLUSION+"° exclusion zone.\n(Sun now at Alt "+sun.alt.toFixed(1)+"° / Az "+sun.az.toFixed(1)+"°.)\n\nPointing optics near the Sun can destroy your camera and blind you.\n\nSlew anyway?")) return;
+      }
+      if(alt < 20 && !confirm("Slew to a LOW target:  Alt "+alt.toFixed(1)+"° / Az "+az.toFixed(1)+"°.\nMake sure the scope is physically clear at that pointing. Proceed?")) return;
+      slewBtn.disabled = true;
+      try {
+        const r = await api('api/slew', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({alt, az})});
+        mountReadout.innerHTML = "Slew started ("+(r.method||'')+") → Alt "+alt.toFixed(1)+"° / Az "+az.toFixed(1)+"°";
+      } catch(e){ mountReadout.innerHTML = "<span class='status blocked'>Slew refused: "+e.message+"</span>"; }
+      poll();
+    });
+
+    stopBtn.addEventListener('click', async ()=>{
+      try { await api('api/abort', {method:'POST'}); mountReadout.innerHTML = "STOP sent (AbortSlew)."; }
+      catch(e){ mountReadout.innerHTML = "<span class='status blocked'>Stop failed: "+e.message+"</span>"; }
+      poll();
+    });
+
+    trackBtn.addEventListener('click', async ()=>{
+      trackBtn.disabled = true;
+      try { render(await api('api/tracking', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({on: !trackingOn})})); }
+      catch(e){ mountReadout.innerHTML = "<span class='status blocked'>Tracking toggle failed: "+e.message+"</span>"; }
+    });
+  })();
+
+  place(45, 180);
+  updateFileState();
+})();
+</script>
+</body>
+</html>

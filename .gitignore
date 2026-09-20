@@ -1,0 +1,9 @@
+# Keep the repo to just the tool + README
+*.hrz
+*.png
+*.webp
+Test.*
+~$*
+*.xlsx
+HANDOVER.md
+altaz_finder.html
