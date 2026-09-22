@@ -1,22 +1,23 @@
 <#
-  gss-bridge.ps1  —  local bridge between the Horizon Editor web page and an
-  ASCOM telescope (default: GS Server, ProgID ASCOM.GS.Sky.Telescope).
+  mount-bridge.ps1  -  local bridge between the Horizon Editor web page and any
+  ASCOM telescope mount. On launch it opens the ASCOM Chooser to pick the mount
+  (GS Server, ZWO AM, iOptron, EQMOD, simulator, ...); pass -ProgId to skip it.
 
   Why this exists: a browser page cannot talk to a COM ASCOM driver. This
   script (a) serves the HTML page over http://localhost so page + API are
   SAME-ORIGIN (no CORS), and (b) talks COM directly to the mount. Zero install
-  on Windows 11 — Windows PowerShell 5.1 (STA) has everything needed.
+  on Windows 11 - Windows PowerShell 5.1 (STA) has everything needed.
 
   Run:
-    powershell -STA -ExecutionPolicy Bypass -File .\gss-bridge.ps1
-    powershell -STA -ExecutionPolicy Bypass -File .\gss-bridge.ps1 -ProgId ASCOM.Simulator.Telescope -Port 5555
+    powershell -STA -ExecutionPolicy Bypass -File .\mount-bridge.ps1
+    powershell -STA -ExecutionPolicy Bypass -File .\mount-bridge.ps1 -ProgId ASCOM.Simulator.Telescope -Port 5555
 
   SAFETY: read-only until you press Slew. Validates SiderealTime + site before
-  any slew. Never sets Connected = $false (GS Server shares connection state;
-  dropping it could kill N.I.N.A.'s link). AbortSlew is exposed as STOP.
+  any slew. Never sets Connected = $false (a hub driver like GS Server shares
+  connection state; dropping it could kill N.I.N.A.'s link). AbortSlew is STOP.
 #>
 param(
-  [string]$ProgId  = 'ASCOM.GS.Sky.Telescope',
+  [string]$ProgId  = '',    # empty -> pop the ASCOM Chooser to pick any mount; pass one to skip the dialog
   [int]   $Port    = 5555,
   [string]$HtmlPath = (Join-Path $PSScriptRoot 'horizon_editor_local.html')
 )
@@ -24,6 +25,20 @@ param(
 $ErrorActionPreference = 'Stop'
 if ([Threading.Thread]::CurrentThread.ApartmentState -ne 'STA') {
   Write-Warning "Not running STA. ASCOM COM wants STA. Relaunch with:  powershell -STA -File .\gss-bridge.ps1"
+}
+
+# ---------- pick the mount (ASCOM Chooser) unless a ProgId was given ----------
+if (-not $ProgId) {
+  try {
+    $chooser = New-Object -ComObject ASCOM.Utilities.Chooser
+    $chooser.DeviceType = 'Telescope'
+    Write-Host "Opening the ASCOM Chooser - pick your mount..."
+    $ProgId = $chooser.Choose('ASCOM.GS.Sky.Telescope')   # GS Server pre-selected
+    try { [void][System.Runtime.InteropServices.Marshal]::ReleaseComObject($chooser) } catch {}  # cleanup only; never fail the Chooser over it
+  } catch {
+    Write-Warning "ASCOM Chooser unavailable ($($_.Exception.Message)). Install the ASCOM Platform, or pass -ProgId."
+  }
+  if (-not $ProgId) { Write-Host "No mount selected - exiting."; exit }
 }
 
 # ---------- connect COM ----------
@@ -38,9 +53,12 @@ function Get-Cap($name){ try { return [bool]$scope.$name } catch { return $false
 
 function Get-Status {
   $s = [ordered]@{ ok = $true; progId = $ProgId }
+  try { $s.name = $scope.Name } catch { $s.name = $null }
   try { $s.connected = [bool]$scope.Connected } catch { $s.connected = $false }
   if ($s.connected) {
-    foreach ($p in 'Slewing','Tracking','AtPark') { try { $s[$p.ToLower()] = [bool]$scope.$p } catch { $s[$p.ToLower()] = $null } }
+    foreach ($p in 'Slewing','Tracking','AtPark','AtHome') { try { $s[$p.ToLower()] = [bool]$scope.$p } catch { $s[$p.ToLower()] = $null } }
+    $s.canFindHome = Get-Cap 'CanFindHome'
+    $s.canPark     = Get-Cap 'CanPark'
     try { $s.ra   = [math]::Round($scope.RightAscension,5) } catch { $s.ra = $null }
     try { $s.dec  = [math]::Round($scope.Declination,5) }    catch { $s.dec = $null }
     try { $s.alt  = [math]::Round($scope.Altitude,5) }       catch { $s.alt = $null }
@@ -127,6 +145,7 @@ while ($listener.IsListening) {
       if (Test-Path $HtmlPath) {
         $bytes=[IO.File]::ReadAllBytes($HtmlPath)
         $ctx.Response.ContentType='text/html; charset=utf-8'
+        $ctx.Response.Headers.Add('Cache-Control','no-store, must-revalidate')   # always serve the current file
         $ctx.Response.OutputStream.Write($bytes,0,$bytes.Length); $ctx.Response.OutputStream.Close()
       } else { $ctx.Response.StatusCode=404; $ctx.Response.OutputStream.Close() }
       continue
@@ -147,6 +166,25 @@ while ($listener.IsListening) {
       '/api/abort' {
         try { $scope.AbortSlew(); Send-Json $ctx @{ ok=$true } }
         catch { Send-Json $ctx @{ ok=$false; error=$_.Exception.Message } 400 }
+        break
+      }
+      '/api/home' {
+        try {
+          if (-not (Get-Cap 'CanFindHome')) { Send-Json $ctx @{ ok=$false; error='driver does not support Find Home' } 400; break }
+          if ($scope.AtPark -and (Get-Cap 'CanUnpark')) { $scope.Unpark() }
+          Write-Host "FindHome()"
+          $scope.FindHome()
+          Send-Json $ctx @{ ok=$true }
+        } catch { Send-Json $ctx @{ ok=$false; error=$_.Exception.Message } 400 }
+        break
+      }
+      '/api/park' {
+        try {
+          if (-not (Get-Cap 'CanPark')) { Send-Json $ctx @{ ok=$false; error='driver does not support Park' } 400; break }
+          Write-Host "Park()"
+          $scope.Park()
+          Send-Json $ctx @{ ok=$true }
+        } catch { Send-Json $ctx @{ ok=$false; error=$_.Exception.Message } 400 }
         break
       }
       '/api/tracking' {

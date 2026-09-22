@@ -105,6 +105,14 @@
   details.panel[open] summary::after{content:"▾";}
   details.panel .body{padding:0 20px 18px;}
   .legend-below{margin-top:16px;}
+  textarea#notesArea{width:100%; min-height:130px; resize:vertical; box-sizing:border-box;
+    font-family:'Manrope',sans-serif; font-size:14px; color:var(--text); background:#0d1224;
+    border:1px solid var(--panel-edge); border-radius:8px; padding:10px 12px; line-height:1.55;}
+  textarea#notesArea:focus{outline:2px solid var(--cursor); outline-offset:1px;}
+  .notes-foot{display:flex; align-items:center; justify-content:space-between; margin-top:8px;}
+  .notes-foot button{padding:6px 12px; border:1px solid var(--panel-edge); border-radius:6px;
+    background:#0d1224; color:var(--muted); font-family:'Manrope',sans-serif; font-size:12.5px; cursor:pointer;}
+  .notes-foot button:hover{color:var(--text); border-color:var(--grid-strong);}
   @media (max-width:760px){ main{flex-direction:column;} .side-col{width:100%;} .header-row{flex-direction:column; align-items:flex-start;} }
 </style>
 </head>
@@ -142,7 +150,7 @@
           <div class="row"><span class="swatch" style="border-color:var(--dec-line); border-top-style:dashed;"></span> Declination circles &plusmn;30&deg;/&plusmn;60&deg;</div>
           <div class="row"><span class="swatch" style="border-color:var(--cursor); border-top-width:0; border-bottom:3px dotted var(--cursor);"></span> Target cursor / FOV ring</div>
           <div class="row"><span class="swatch" style="width:12px; height:12px; border:none; border-radius:50%; background:var(--edge);"></span> FOV ring lowest edge (visual reference only)</div>
-          <div class="row"><span class="swatch" style="width:12px; height:12px; border:none; border-radius:50%; background:var(--sun);"></span> Sun (dot + 30&deg; zone when up) &middot; dotted line = today's path</div>
+          <div class="row"><span class="swatch" style="width:12px; height:12px; border:none; border-radius:50%; background:linear-gradient(90deg, var(--danger-strong) 50%, var(--sun) 50%);"></span> Sun &middot; 15&deg; (red) + 30&deg; (yellow) zones when up &middot; dotted line = today's path</div>
         </div>
       </div>
     </div>
@@ -153,7 +161,7 @@
         <div class="field-row">
           <div class="field">
             <label for="raIn">RA (deg, h m s, or decimal h)</label>
-            <input id="raIn" type="text" value="306.5094090734796">
+            <input id="raIn" type="text" placeholder="e.g. 306.51 or 20 26 02">
           </div>
           <div class="field" style="max-width:100px;">
             <label>&nbsp;</label>
@@ -164,7 +172,7 @@
           </div>
         </div>
         <div class="field-row">
-          <div class="field"><label for="decIn">Dec (&deg; ' " or decimal)</label><input id="decIn" type="text" value="47.71657850075553"></div>
+          <div class="field"><label for="decIn">Dec (&deg; ' " or decimal)</label><input id="decIn" type="text" placeholder="e.g. 47.72 or 47 43 00"></div>
         </div>
         <div class="field-row">
           <div class="field">
@@ -223,14 +231,16 @@
       </details>
 
       <div class="panel" id="mountPanel">
-        <h2>Mount &mdash; ASCOM (GS Server)</h2>
-        <p class="hint" id="mountUnavailable">Open this page through the bridge to enable mount control: run <code>gss-bridge.ps1</code> and browse to <code>http://localhost:5555</code>. (Opened directly from disk, the mount panel stays inactive.)</p>
+        <h2>Mount &mdash; ASCOM</h2>
+        <p class="hint" id="mountUnavailable">Open this page through the bridge to enable mount control: run <code>start-bridge.cmd</code> and browse to <code>http://localhost:5555</code>. (Opened directly from disk, the mount panel stays inactive.)</p>
         <div id="mountControls" style="display:none;">
           <div class="filestate" id="mountStatus"><span class="dot amber"></span>bridge found &mdash; not connected</div>
           <button class="action primary" id="mountConnectBtn">Connect to mount</button>
           <div class="btn-grid" style="margin-top:8px;">
             <button class="action confirm" id="slewBtn" disabled title="Slew the mount to the current crosshair Alt/Az (the selected point). Confirms first on low-altitude targets.">Slew to point</button>
             <button class="action" id="stopBtn" disabled style="background:var(--danger-strong); color:#2a0808;" title="Abort any slew immediately (ASCOM AbortSlew).">STOP</button>
+            <button class="action" id="homeBtn" disabled style="background:#0d1224; color:var(--text); border:1px solid var(--panel-edge);" title="Send the mount to its Home position (ASCOM FindHome) — counterweight down, pointing at the pole. Tracking stops. Disabled if the driver has no Find Home.">Home</button>
+            <button class="action" id="parkBtn" disabled style="background:#0d1224; color:var(--text); border:1px solid var(--panel-edge);" title="Park the mount (ASCOM Park) — slews to the park position and latches it (won't move until unparked). Disabled if the driver has no Park.">Park</button>
           </div>
           <button class="action" id="trackBtn" disabled style="background:#0d1224; color:var(--text); border:1px solid var(--panel-edge); margin-top:8px;" title="Toggle sidereal tracking. An Alt/Az slew turns tracking OFF so the scope holds the horizon bearing; turn it back ON to resume imaging.">Tracking: &mdash;</button>
           <div class="readout" id="mountReadout">&mdash;</div>
@@ -239,6 +249,17 @@
       </div>
     </div>
   </main>
+
+  <details class="panel" id="notesPanel" style="margin-top:20px;">
+    <summary>Notes</summary>
+    <div class="body">
+      <textarea id="notesArea" placeholder="Session notes — e.g. original focus value, Gain / Offset, filter, rotation angle, target… Saved automatically until you change or clear it."></textarea>
+      <div class="notes-foot">
+        <span class="hint" style="margin:0;">Saved in this browser <span id="notesSaved" style="color:var(--ok);"></span></span>
+        <button id="notesClear" type="button">Clear</button>
+      </div>
+    </div>
+  </details>
 </div>
 
 <script>
@@ -884,13 +905,8 @@
   document.getElementById('tzLocal').addEventListener('click', function(){ tzMode="local"; this.classList.add('active'); document.getElementById('tzUtc').classList.remove('active'); });
   document.getElementById('tzUtc').addEventListener('click', function(){ tzMode="utc"; this.classList.add('active'); document.getElementById('tzLocal').classList.remove('active'); });
 
-  // default the datetime field to "now", in the unambiguous ISO-ish format the parser accepts
-  (function(){
-    const now = new Date();
-    const p = n=>String(n).padStart(2,'0');
-    document.getElementById('dtIn').value =
-      now.getFullYear()+"-"+p(now.getMonth()+1)+"-"+p(now.getDate())+" "+p(now.getHours())+":"+p(now.getMinutes());
-  })();
+  // Date/time starts empty on a fresh page (paste from your imaging log, or
+  // type a timestamp). The placeholder shows the accepted format.
 
   function buildDateObj(parsed, mode){
     if(mode === "utc") return new Date(Date.UTC(parsed.y, parsed.mo-1, parsed.d, parsed.h, parsed.mi, parsed.s));
@@ -1191,6 +1207,7 @@
   // time (not the planning field), because as a safety cue it must show where
   // the Sun actually is right now.
   const SUN_EXCLUSION = 30;
+  const SUN_INNER = 15;
   let SUN = null;
   function sunAltAz(date){
     const jd = date.getTime()/86400000 + 2440587.5;
@@ -1232,17 +1249,23 @@
     });
     if(d) g.appendChild(el("path",{d, fill:"none", stroke:"var(--sun)","stroke-width":1,"stroke-opacity":0.55,"stroke-dasharray":"1,5","stroke-linecap":"round"}));
 
-    if(!SUN || SUN.alt <= 0) return;   // dot + exclusion zone only when the Sun is up
-    const ring = fovRingAroundAltAz(SUN.alt, SUN.az, SUN_EXCLUSION, 48);
-    let z="", started=false, pz=null, wrapped=false;
-    ring.forEach(p=>{
-      let X,Y;
-      if(isStrip){ if(pz!=null && Math.abs(p.az-pz)>180){ started=false; wrapped=true; } X=sx(p.az); Y=sy(Math.max(p.alt,0)); pz=p.az; }
-      else { const xy=project(p.az, Math.max(p.alt,0)); X=xy[0]; Y=xy[1]; }
-      z += (started?"L":"M")+X.toFixed(2)+","+Y.toFixed(2)+" "; started=true;
-    });
-    if(!isStrip || !wrapped) z += "Z";   // close the loop (strip: only when it doesn't wrap past N)
-    g.appendChild(el("path",{d:z, fill:isStrip?"none":"var(--sun)", "fill-opacity":isStrip?0:0.12, stroke:"var(--sun)","stroke-width":1.5,"stroke-dasharray":"4,4"}));
+    if(!SUN || SUN.alt <= 0) return;   // rings + dot only when the Sun is up
+    function ringPathD(radiusDeg){
+      const ring = fovRingAroundAltAz(SUN.alt, SUN.az, radiusDeg, 48);
+      let d="", started=false, pz=null, wrapped=false;
+      ring.forEach(p=>{
+        let X,Y;
+        if(isStrip){ if(pz!=null && Math.abs(p.az-pz)>180){ started=false; wrapped=true; } X=sx(p.az); Y=sy(Math.max(p.alt,0)); pz=p.az; }
+        else { const xy=project(p.az, Math.max(p.alt,0)); X=xy[0]; Y=xy[1]; }
+        d += (started?"L":"M")+X.toFixed(2)+","+Y.toFixed(2)+" "; started=true;
+      });
+      if(!isStrip || !wrapped) d += "Z";   // close the loop (strip: only when it doesn't wrap past N)
+      return d;
+    }
+    // 30° exclusion zone (yellow, dashed; filled on the dome)
+    g.appendChild(el("path",{d:ringPathD(SUN_EXCLUSION), fill:isStrip?"none":"var(--sun)", "fill-opacity":isStrip?0:0.12, stroke:"var(--sun)","stroke-width":1.5,"stroke-dasharray":"4,4"}));
+    // 15° inner ring (bright red, dotted)
+    g.appendChild(el("path",{d:ringPathD(SUN_INNER), fill:"none", stroke:"var(--danger-strong)","stroke-width":1.5,"stroke-dasharray":"1,4","stroke-linecap":"round"}));
     let cx,cy;
     if(isStrip){ cx=sx(SUN.az); cy=sy(SUN.alt); } else { const xy=project(SUN.az,SUN.alt); cx=xy[0]; cy=xy[1]; }
     g.appendChild(el("circle",{cx,cy,r:isStrip?5:7, fill:"var(--sun)", stroke:"#7a5c00","stroke-width":1}));
@@ -1265,6 +1288,8 @@
     const connectBtn = document.getElementById('mountConnectBtn');
     const slewBtn = document.getElementById('slewBtn');
     const stopBtn = document.getElementById('stopBtn');
+    const homeBtn = document.getElementById('homeBtn');
+    const parkBtn = document.getElementById('parkBtn');
     const trackBtn = document.getElementById('trackBtn');
     const mountReadout = document.getElementById('mountReadout');
     let connected = false, trackingOn = false;
@@ -1297,6 +1322,8 @@
       slewBtn.disabled = !connected;
       stopBtn.disabled = !connected;
       trackBtn.disabled = !connected;
+      homeBtn.disabled = !(connected && s && s.canFindHome);   // greyed out on Park-only drivers (e.g. EQMOD)
+      parkBtn.disabled = !(connected && s && s.canPark);
       connectBtn.disabled = connected;
       connectBtn.textContent = connected ? 'Connected ✓' : 'Connect to mount';
       if(!s){ statusEl.innerHTML = "<span class='dot red'></span>bridge error"; return; }
@@ -1304,11 +1331,11 @@
         trackingOn = !!s.tracking;
         trackBtn.textContent = 'Tracking: ' + (trackingOn ? 'ON' : 'OFF');
         adoptMountSite(s.siteLat, s.siteLon);
-        statusEl.innerHTML = "<span class='dot green'></span>connected" + (s.slewing ? " <b style='color:var(--warn)'>(slewing…)</b>" : "");
+        statusEl.innerHTML = "<span class='dot green'></span>connected — " + (s.name || 'mount') + (s.slewing ? " <b style='color:var(--warn)'>(slewing…)</b>" : "");
         mountReadout.innerHTML =
           "Alt "+fmt(s.alt,2)+"° / Az "+fmt(s.az,2)+"°<br>"+
           "RA "+fmt(s.ra,4)+"h / Dec "+fmt(s.dec,3)+"°<br>"+
-          "LST "+fmt(s.lst,3)+"h · Tracking "+(s.tracking?'on':'off')+(s.atpark?' · PARKED':'');
+          "LST "+fmt(s.lst,3)+"h · Tracking "+(s.tracking?'on':'off')+(s.atpark?' · PARKED':'')+(s.athome?' · HOME':'');
       } else {
         statusEl.innerHTML = "<span class='dot amber'></span>bridge found — not connected";
         mountReadout.innerHTML = "—";
@@ -1356,11 +1383,42 @@
       poll();
     });
 
+    homeBtn.addEventListener('click', async ()=>{
+      if(!confirm("Send the mount HOME?\nIt slews to the home position (counterweight down, pointing at the pole) and tracking stops. Make sure the scope is clear to move.")) return;
+      try { await api('api/home', {method:'POST'}); mountReadout.innerHTML = "Homing… (watch the mount)"; }
+      catch(e){ mountReadout.innerHTML = "<span class='status blocked'>Home failed: "+e.message+"</span>"; }
+      poll();
+    });
+
+    parkBtn.addEventListener('click', async ()=>{
+      if(!confirm("PARK the mount?\nIt slews to its park position and latches (tracking off; it won't move again until unparked — a Slew or Home here will auto-unpark). Make sure the scope is clear to move.")) return;
+      try { await api('api/park', {method:'POST'}); mountReadout.innerHTML = "Parking… (watch the mount)"; }
+      catch(e){ mountReadout.innerHTML = "<span class='status blocked'>Park failed: "+e.message+"</span>"; }
+      poll();
+    });
+
     trackBtn.addEventListener('click', async ()=>{
       trackBtn.disabled = true;
       try { render(await api('api/tracking', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({on: !trackingOn})})); }
       catch(e){ mountReadout.innerHTML = "<span class='status blocked'>Tracking toggle failed: "+e.message+"</span>"; }
     });
+  })();
+
+  // ---------- Notes scratchpad (persisted per browser) ----------
+  (function(){
+    const na = document.getElementById('notesArea');
+    const savedEl = document.getElementById('notesSaved');
+    const clr = document.getElementById('notesClear');
+    if(!na) return;
+    const NKEY = 'horizonEditor.notes';
+    if(storageOK){ try{ const v = localStorage.getItem(NKEY); if(v!=null) na.value = v; }catch(e){} }
+    let t = null;
+    function persist(){
+      if(storageOK){ try{ localStorage.setItem(NKEY, na.value); }catch(e){} }
+      if(savedEl){ savedEl.textContent = '✓ saved'; clearTimeout(t); t = setTimeout(()=>{ savedEl.textContent=''; }, 1200); }
+    }
+    na.addEventListener('input', persist);
+    if(clr) clr.addEventListener('click', ()=>{ na.value=''; persist(); na.focus(); });
   })();
 
   place(45, 180);

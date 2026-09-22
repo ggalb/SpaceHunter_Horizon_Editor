@@ -4,6 +4,9 @@ A local tool to build and edit **N.I.N.A. custom horizon (`.hrz`)** files, and
 optionally slew a **Sky‑Watcher / GS Server** mount to horizon points to check
 the sky is actually clear.
 
+📖 **Full user manual:** [`SpaceHunter_HorizonEditor_UserManual.html`](SpaceHunter_HorizonEditor_UserManual.html)
+— open it in Chrome/Edge (keep the `manual_images/` folder alongside it).
+
 ## What it does
 
 - **Two views of your horizon:** a polar Alt/Az dome and a rectangular
@@ -54,7 +57,7 @@ warranty of any kind (see [`LICENSE`](LICENSE)).
 | File | Purpose |
 |---|---|
 | `horizon_editor_local.html` | The app (open in Chrome/Edge) |
-| `gss-bridge.ps1` | Local ASCOM ↔ GS Server bridge (serves the page + mount API) |
+| `mount-bridge.ps1` | Local ASCOM bridge (serves the page + mount API; picks any mount via the ASCOM Chooser) |
 | `start-bridge.cmd` | Double‑click launcher for the bridge |
 
 ## License

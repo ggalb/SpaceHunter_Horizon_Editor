@@ -1,10 +1,15 @@
-# Keep the repo to just the tool + README
+# Keep the repo to the tool + README + the HTML user manual
 *.hrz
 *.png
 *.webp
 Test.*
 ~$*
 *.xlsx
+*.pdf
+*.docx
 HANDOVER.md
 altaz_finder.html
 README.html
+
+# ...but DO include the user-manual images (override the *.png rule above)
+!manual_images/*.png

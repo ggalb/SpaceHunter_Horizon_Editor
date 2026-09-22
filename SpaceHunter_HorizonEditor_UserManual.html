@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Space Hunter — Horizon Editor · User Manual</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ink:#1b2233; --muted:#5b647d; --line:#dfe4ee; --panel:#f5f7fb;
+    --accent:#b5732f; --accent2:#2f6db5; --sun:#e0a400; --danger:#d23b2f; --ok:#2e8b57;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0; background:#fff; color:var(--ink);
+    font-family:'Manrope',system-ui,sans-serif; font-size:15px; line-height:1.6;}
+  .page{max-width:900px; margin:0 auto; padding:36px 22px 60px;}
+  .doctitle{font-family:'Barlow Condensed',sans-serif; font-weight:700; letter-spacing:.4px;
+    font-size:clamp(26px,5vw,40px); color:var(--accent); line-height:1.1; margin:0;}
+  .docsub{font-family:'Barlow Condensed',sans-serif; font-weight:600; letter-spacing:.6px;
+    font-size:clamp(15px,2.6vw,20px); text-transform:uppercase; color:var(--muted); margin:3px 0 0;}
+  .lede{color:var(--muted); margin:10px 0 0;}
+  hr{border:none; border-top:1px solid var(--line); margin:26px 0;}
+  h2{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:22px; letter-spacing:.3px;
+    color:var(--ink); margin:30px 0 8px; padding-bottom:5px; border-bottom:2px solid var(--line);}
+  h3{font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:17px; color:var(--accent);
+    margin:18px 0 4px;}
+  p{margin:8px 0;}
+  code{font-family:'IBM Plex Mono',monospace; font-size:.86em; background:var(--panel);
+    border:1px solid var(--line); border-radius:4px; padding:1px 5px;}
+  ul,ol{margin:8px 0; padding-left:22px;} li{margin:4px 0;}
+  figure{margin:14px 0; text-align:center;}
+  figure img{max-width:100%; border:1px solid var(--line); border-radius:8px; background:#0a0e1a;}
+  figcaption{color:var(--muted); font-size:12.5px; margin-top:6px;}
+  .num{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px;
+    border-radius:50%; background:var(--accent); color:#fff; font-weight:700; font-size:13px;
+    font-family:'Barlow Condensed',sans-serif; margin-right:7px; vertical-align:baseline;}
+  .callout{border-left:4px solid var(--sun); background:#fff8e6; border-radius:6px; padding:12px 15px; margin:14px 0;}
+  .callout.warn{border-color:var(--danger); background:#fdecea;}
+  .callout .t{font-weight:700;}
+  .maplist{list-style:none; padding:0; columns:2; column-gap:28px;}
+  .maplist li{margin:5px 0; break-inside:avoid;}
+  .overview{position:relative; display:block; width:100%; max-width:600px; margin:0 auto;}
+  .overview img{display:block; width:100%;}
+  .overview .badge{position:absolute; transform:translate(-50%,-50%);
+    width:24px; height:24px; border-radius:50%; background:var(--accent); color:#fff;
+    font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:14px;
+    display:flex; align-items:center; justify-content:center; border:2px solid #fff;
+    box-shadow:0 0 0 1px rgba(0,0,0,.3);}
+  table{border-collapse:collapse; width:100%; margin:10px 0; font-size:14px;}
+  th,td{border:1px solid var(--line); padding:7px 10px; text-align:left; vertical-align:top;}
+  th{background:var(--panel); font-size:12px; text-transform:uppercase; letter-spacing:.4px; color:var(--muted);}
+  .small{font-size:12.5px; color:var(--muted);}
+  @media print{
+    a{color:inherit; text-decoration:none;}
+    h2{break-after:avoid;} figure,table,.callout{break-inside:avoid;}
+    .page{padding:0;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="doctitle">Space Hunter — Horizon Editor</p>
+  <p class="docsub">User Manual</p>
+  <p class="lede">Build and edit N.I.N.A. custom‑horizon (<code>.hrz</code>) files in two synced views, and —
+  optionally — slew any ASCOM mount to horizon points to confirm the sky is actually clear.</p>
+
+  <hr>
+
+  <h2>1 · The interface at a glance</h2>
+  <figure>
+    <div class="overview">
+      <img src="manual_images/FirstTimeAPP.png" alt="Full app overview">
+      <span class="badge" style="left:10%;top:6.4%">1</span>
+      <span class="badge" style="left:72%;top:6.4%">2</span>
+      <span class="badge" style="left:82%;top:20%">3</span>
+      <span class="badge" style="left:82%;top:41%">4</span>
+      <span class="badge" style="left:82%;top:57%">5</span>
+      <span class="badge" style="left:82%;top:72%">6</span>
+      <span class="badge" style="left:34%;top:28%">7</span>
+      <span class="badge" style="left:34%;top:59%">8</span>
+      <span class="badge" style="left:34%;top:78%">9</span>
+      <span class="badge" style="left:50%;top:91.5%">10</span>
+    </div>
+    <figcaption>The app on first run (empty site, flat 0° horizon). Numbers match the sections below.</figcaption>
+  </figure>
+  <ul class="maplist">
+    <li><span class="num">1</span>Latitude / Longitude</li>
+    <li><span class="num">2</span>Open <code>.hrz</code> / Save</li>
+    <li><span class="num">3</span>Image coordinates (RA/Dec → Alt/Az)</li>
+    <li><span class="num">4</span>Alt/Az target</li>
+    <li><span class="num">5</span>Camera / focal length</li>
+    <li><span class="num">6</span>Mount controls (ASCOM)</li>
+    <li><span class="num">7</span>Sky Dome view</li>
+    <li><span class="num">8</span>Strip view</li>
+    <li><span class="num">9</span>Legend</li>
+    <li><span class="num">10</span>Notes</li>
+  </ul>
+
+  <h2>Before you start</h2>
+  <h3>Editing only (no mount)</h3>
+  <p>Double‑click <code>horizon_editor_local.html</code>. It opens in Chrome or Edge with full function
+  except mount control.</p>
+  <h3>With a mount connected</h3>
+  <ol>
+    <li>Open your mount software (GS Server, EQMOD, ASIMount, iOptron Commander, …) and <b>connect the mount</b>.</li>
+    <li>Double‑click <code>start-bridge.cmd</code>. The <b>ASCOM Chooser</b> opens — pick your mount driver and confirm.</li>
+    <li>A terminal window opens and shows <code>http://localhost:5555/</code>. <b>Keep this window open</b> — closing it ends mount control.</li>
+    <li>Open <code>http://localhost:5555</code> in Chrome/Edge. (Ctrl+click the link works in Windows Terminal; in a classic <code>cmd</code> window, type the address into the browser.)</li>
+  </ol>
+  <figure><img src="manual_images/Terminal%20ASCOM.png" alt="ASCOM Telescope Chooser" style="max-width:640px">
+    <figcaption>Step 2 — the ASCOM Chooser. Select your mount's driver, then <b>OK</b>.</figcaption></figure>
+  <figure><img src="manual_images/Terminal%20Connection.png" alt="Bridge running in the terminal" style="max-width:640px">
+    <figcaption>Steps 3–4 — the bridge is running. Open <code>http://localhost:5555</code> and leave this window open.</figcaption></figure>
+  <p class="small">Your rig must be polar aligned (permanent pier, or PA carried over from the night before).</p>
+
+  <h2>Handling outside the app</h2>
+  <p>In mount‑connected mode: additionally open your imaging software and connect your camera; if you use a
+  flat panel, connect that too. If you want to confirm an external guide scope (if used) has a clear view at
+  the selected point, that gear and its software must be connected as well. <b>Equipment other than the mount
+  is not handled in this application.</b></p>
+
+  <div class="callout warn">
+    <span class="t">⚠ Daytime / the Sun.</span> If you use the app during the day under open sky, your scope's
+    path may cross the Sun. Before you slew, consider leaving the <b>flat panel closed</b> to protect the optics.
+    A slew to within <b>30° of the Sun's centre</b> raises a confirmation — but the software <b>does not prevent</b>
+    the slew; the decision is yours (see the disclaimer in <code>LICENSE</code>). When the Sun is up, both views
+    show it with a red 15° and yellow 30° safety ring and today's trajectory.
+  </div>
+
+  <h2>First‑time setup</h2>
+  <p><span class="num">1</span>Enter your <b>Latitude / Longitude</b> and <span class="num">2</span>open your
+  <code>.hrz</code> file. <span class="num">5</span>Add your camera <b>sensor width/height</b> and the scope's
+  <b>focal length</b>. These values are remembered until you change them. When a mount is connected the app
+  <b>adopts the mount's site automatically</b>. Your horizon then appears in the Sky Dome <span class="num">7</span>
+  and Strip <span class="num">8</span> views. When you later edit the horizon, the <b>Save</b> button
+  <span class="num">2</span> writes your changes back to the <code>.hrz</code> file.</p>
+  <div class="callout"><span class="t">Where your settings live (Chrome / Edge).</span> Lat/Long, camera + focal
+  length, your <b>Notes</b>, and the last horizon are saved in the browser's <b>local storage</b> for this page.
+  They come back next time <b>only if you open it the same way</b> (same browser, ideally via the bridge at
+  <code>http://localhost:5555</code>). They are <b>erased</b> if you clear the browser cache / "cookies and site
+  data," use a setting that clears data when the browser closes, or open in a Guest / InPrivate window — so
+  don't clear site data if you want to keep them. The <code>.hrz</code> file itself must be <b>re‑opened each
+  session</b> (browsers won't silently re‑open a file): the horizon is redrawn from memory, but re‑Open it
+  before you Save.</div>
+  <figure><img src="manual_images/Lat_Long_Open_Save.png" alt="Lat/Long, Open .hrz and Save" style="width:100%">
+    <figcaption>1 + 2 — site coordinates, <b>Open&nbsp;.hrz</b> to load your horizon, and <b>Save</b> to write edits back to the file.</figcaption></figure>
+  <figure><img src="manual_images/Camera_Focal%20lenght.png" alt="Camera / focal length" style="max-width:520px">
+    <figcaption>5 — sensor size + focal length draw the FOV ring (a visual guide only).</figcaption></figure>
+
+  <h2>The two views</h2>
+  <figure><img src="manual_images/Sky_Dome.png" alt="Sky Dome view" style="max-width:560px">
+    <figcaption>7 — <b>Sky Dome</b>: zenith at centre, horizon at the rim, N·E·S·W around the edge.</figcaption></figure>
+  <figure><img src="manual_images/Planisphere.png" alt="Strip view" style="max-width:720px">
+    <figcaption>8 — <b>Strip</b>: azimuth × altitude — the single‑valued horizon exactly as N.I.N.A. reads it.</figcaption></figure>
+  <p>Both views zoom with the mouse wheel (centred on the pointer) and show the crosshair, FOV ring, and — in
+  daytime — the Sun and its safety rings.</p>
+
+  <h2>Two ways to work</h2>
+  <h3>A · Offline, from an imaging log</h3>
+  <p>A target recently clipped a new obstruction (growth, a building). Using N.I.N.A.'s <b>Session Metadata</b>
+  export, find the <b>last good image</b> and copy its <b>date/time + RA/Dec</b> into the Image‑coordinates box
+  <span class="num">3</span>, then <b>Convert → Alt/Az</b>. The crosshair jumps to where that frame was taken;
+  adjust the horizon there. Step along the target's path with the time <code>−/+</code> buttons (RA / hour‑angle
+  axis). No mount needed.</p>
+  <figure><img src="manual_images/Ra_Dec%20-%20Alt_Az.png" alt="RA/Dec to Alt/Az converter" style="max-width:520px">
+    <figcaption>3 — paste date/time + RA/Dec, Convert → Alt/Az. Time <code>−/+</code> traces the RA axis.
+    <em>Reset to entered RA/Dec/time</em> restores your last entry.</figcaption></figure>
+
+  <h3>B · Connected, by slewing</h3>
+  <p>On a cloudy day or at dawn after imaging, brighten your camera and refocus for daylight. Select a point,
+  <b>Slew to point</b>, take an image, and check whether you're clear of the obstruction. Nudge with the Az
+  <code>±°</code> buttons <span class="num">4</span> or the time <code>−/+</code> buttons <span class="num">3</span>,
+  re‑slew, and repeat. Once clear, back off by the last step and save the point. Move to the next.</p>
+  <figure><img src="manual_images/Alt_Az_target.png" alt="Alt/Az target" style="max-width:520px">
+    <figcaption>4 — Alt/Az of the crosshair, with Az <code>±°</code> nudges, Place, Confirm, Delete, Undo.</figcaption></figure>
+
+  <h2>Editing the horizon</h2>
+  <ol>
+    <li><b>Select</b> — click an existing point on the Strip line; it highlights and its values load into box 4.</li>
+    <li><b>Delete</b> — with a point selected, <b>Delete</b> removes it. (The button is inactive until a point is selected.)</li>
+    <li><b>Place</b> — click empty space to drop the crosshair where you want a point.</li>
+    <li><b>Confirm</b> — writes the point into the horizon. New/edited points show <b style="color:var(--danger)">red</b>.</li>
+    <li><b>Save</b> — box 2 writes the file. <b>Until you Save, red points are unsaved and will be lost.</b> <b>Undo</b> reverses the last add/overwrite/delete.</li>
+  </ol>
+  <figure><img src="manual_images/ExistingPoint.png" alt="Select an existing point" style="max-width:720px">
+    <figcaption>Selecting an existing point (enables Delete).</figcaption></figure>
+  <figure><img src="manual_images/PlacePoint.png" alt="Place a point" style="max-width:720px">
+    <figcaption>Placing a new point.</figcaption></figure>
+  <figure><img src="manual_images/ConfirmPoint.png" alt="Confirm the point" style="max-width:720px">
+    <figcaption>After Confirm — the new point is added.</figcaption></figure>
+  <figure><img src="manual_images/DletePoint.png" alt="Delete a point" style="max-width:720px">
+    <figcaption>Deleting a selected point.</figcaption></figure>
+  <figure><img src="manual_images/UnsavedPoint.png" alt="Unsaved point in red" style="max-width:720px">
+    <figcaption>Red = unsaved. It stays red until you Save the file (2).</figcaption></figure>
+
+  <h2>6 · Mount controls (ASCOM)</h2>
+  <figure><img src="manual_images/Mount_ASCOM.png" alt="Mount controls" style="max-width:460px">
+    <figcaption>6 — the mount panel, shown connected to GS Server.</figcaption></figure>
+  <table>
+    <tr><th>Control</th><th>Does</th></tr>
+    <tr><td><b>Slew to point</b></td><td>Slews to the crosshair's Alt/Az. Low‑altitude and near‑Sun targets confirm first.</td></tr>
+    <tr><td><b>STOP</b></td><td>Aborts any slew immediately.</td></tr>
+    <tr><td><b>Home</b></td><td>Sends the mount to its home position. Greyed out if the driver has no Find Home (e.g. EQMOD).</td></tr>
+    <tr><td><b>Park</b></td><td>Parks and latches the mount. A later Slew or Home auto‑unparks. Greyed out if unsupported.</td></tr>
+    <tr><td><b>Tracking</b></td><td>On/off (see the note below).</td></tr>
+  </table>
+  <div class="callout"><span class="t">Why the Tracking button matters.</span> For horizon checking you want a
+  <b>static foreground</b> — the scope held on a fixed compass/elevation bearing, not following the stars.
+  Mounts that slew in <b>Alt/Az</b> (e.g. GS&nbsp;Server) turn tracking <b>off automatically</b> on a slew, so
+  the scope stays put. But mounts that slew via <b>RA/Dec</b> (ZWO&nbsp;AM, EQMOD) keep tracking <b>on</b>, so the
+  view slowly drifts off the point — press <b>Tracking: OFF</b> to hold it still. Turn tracking back on to
+  resume normal imaging.</div>
+  <p class="small">N.I.N.A. checks the frame <b>centre</b> against the horizon (it ignores sensor size and
+  rotation), so pointing the scope at a horizon point shows exactly what N.I.N.A. would.</p>
+
+  <h2>10 · Notes</h2>
+  <figure><img src="manual_images/Notes.png" alt="Notes panel" style="width:100%">
+    <figcaption>10 — a scratchpad, saved in the browser until you change or clear it.</figcaption></figure>
+  <p>Use it for anything you want to remember for the session — original focus value, Gain / Offset, filter,
+  rotation angle, target. It saves automatically; see <b>"Where your settings live (Chrome / Edge)"</b> under
+  <em>First‑time setup</em> for how long it's kept and what erases it.</p>
+
+  <h2>Recommendations</h2>
+  <ul>
+    <li><b>Copy your <code>.hrz</code></b> before your first edits, so a good file can't be overwritten while you learn.</li>
+    <li><b>Write down your night focus position</b> before refocusing for daytime work, so you can return to it.</li>
+    <li><b>Save</b> before you finish — unsaved (red) points are lost otherwise.</li>
+  </ul>
+
+  <p class="small" style="margin-top:26px;">Space Hunter — Horizon Editor. Provided “as is”, without warranty
+  of any kind; use at your own risk (see <code>LICENSE</code>). © 2026 Space Hunter · Georg&nbsp;G&nbsp;Albrecht.</p>
+
+</div>
+</body>
+</html>
