@@ -26,6 +26,22 @@ the sky is actually clear.
 - For mount control: ASCOM Platform + GS Server + your mount's driver, and
   Windows PowerShell 5.1 (built in).
 
+## Install & update
+
+Clone once:
+
+```
+git clone https://github.com/ggalb/SpaceHunter_Horizon_Editor.git
+```
+
+Update later (from inside the folder):
+
+```
+git pull
+```
+
+Then run `start-bridge.cmd` (mount control) or double‑click `horizon_editor_local.html` (editing only).
+
 ## Use
 
 - **Horizon editing only:** double‑click `horizon_editor_local.html`.
